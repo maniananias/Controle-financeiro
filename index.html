@@ -452,7 +452,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-08-z</p>
+    <p class="versao-app">Versão do app: 2026-09-08-aa</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1549,7 +1549,7 @@
   bindMoney(document.getElementById('cfgDiarioValor'), c => { state.config.diarioValor = c; limparCache(); salvarConfig(); });
   document.getElementById('cfgDiarioAtivo').addEventListener('change', e => { state.config.diarioAtivo = e.target.checked; limparCache(); salvarConfig(); });
 
-  document.getElementById('btnExportarBackup').addEventListener('click', () => {
+  document.getElementById('btnExportarBackup').addEventListener('click', async () => {
     const backup = {
       versao: 1,
       exportadoEm: new Date().toISOString(),
@@ -1559,11 +1559,27 @@
       metas: state.metas
     };
     const conteudo = JSON.stringify(backup, null, 2);
+    const nomeArquivo = 'backup-financas-' + todayISO() + '.json';
     const blob = new Blob([conteudo], {type:'application/json'});
+    const arquivo = new File([blob], nomeArquivo, {type:'application/json'});
+
+    // caminho 1: Web Share API com arquivo — é o que funciona de verdade no iPhone (abre a folha de compartilhar nativa)
+    if(navigator.canShare && navigator.canShare({files:[arquivo]})){
+      try{
+        await navigator.share({files:[arquivo], title:'Backup Finanças'});
+        mostrarToast('Escolha "Salvar em Arquivos" na folha que abriu');
+        return;
+      }catch(err){
+        if(err && err.name === 'AbortError') return; // usuário cancelou a folha de compartilhar, sem problema
+        // se falhar por outro motivo, cai pro caminho 2 abaixo
+      }
+    }
+
+    // caminho 2: download direto por link — funciona bem em computador/Android
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'backup-financas-' + todayISO() + '.json';
+    a.download = nomeArquivo;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
@@ -1576,7 +1592,7 @@
       const w = window.open('', '_blank');
       if(w){
         w.document.write('<title>Backup Finanças</title><body style="font-family:monospace;white-space:pre-wrap;padding:16px;font-size:12px;">'+conteudo.replace(/</g,'&lt;')+'</body>');
-        mostrarToast('Abriu numa aba nova — use Compartilhar > Salvar em Arquivos');
+        mostrarToast('Abriu numa aba nova — selecione o texto e copie, ou use Compartilhar');
       }else{
         mostrarToast('Backup gerado — se não baixou, tente novamente');
       }
