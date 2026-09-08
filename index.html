@@ -485,6 +485,13 @@
     </div>
 
     <div class="config-section">
+      <h3>🎯 Recalibrar saldo</h3>
+      <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Se o saldo atual do app não bate com o que você tem de verdade na conta hoje, digite o valor real aqui. O app cria um ajuste automático na data de hoje — nada do seu histórico anterior é alterado.</p>
+      <div class="field"><label>Qual é o seu saldo real hoje?</label><input id="cfgSaldoReal" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <button class="btn-secundario" id="btnRecalibrarSaldo" style="width:100%;">Recalibrar</button>
+    </div>
+
+    <div class="config-section">
       <h3>🔁 Gasto diário</h3>
       <div class="switch-row">
         <span>Lançar automaticamente</span>
@@ -503,7 +510,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-08-ac</p>
+    <p class="versao-app">Versão do app: 2026-09-08-ad</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1738,6 +1745,7 @@
   bindMoney(document.getElementById('cfgSaldoInicial'), c => { state.config.saldoInicial = c; limparCache(); salvarConfig(); });
   bindMoney(document.getElementById('cfgOrcamento'), c => { state.config.orcamentoMensal = c; salvarConfig(); });
   bindMoney(document.getElementById('cfgSaldoMinimo'), c => { state.config.saldoMinimo = c; salvarConfig(); });
+  bindMoney(document.getElementById('cfgSaldoReal'));
   bindMoney(document.getElementById('cfgDiarioValor'), c => { state.config.diarioValor = c; limparCache(); salvarConfig(); });
   document.getElementById('cfgDiarioAtivo').addEventListener('change', e => { state.config.diarioAtivo = e.target.checked; limparCache(); salvarConfig(); });
 
@@ -1822,6 +1830,25 @@
   document.getElementById('btnAtualizarApp').addEventListener('click', () => {
     const url = location.href.split('?')[0] + '?atualizado=' + Date.now();
     location.href = url;
+  });
+  document.getElementById('btnRecalibrarSaldo').addEventListener('click', async () => {
+    const saldoReal = centsFromInput(document.getElementById('cfgSaldoReal'));
+    if(!document.getElementById('cfgSaldoReal').value){ mostrarToast('Informe o saldo real de hoje'); return; }
+    const hoje = new Date();
+    const dias = saldosDiariosDoMes(hoje.getFullYear(), hoje.getMonth());
+    const saldoAppHoje = dias[hoje.getDate()-1].saldo;
+    const delta = saldoReal - saldoAppHoje;
+    if(delta === 0){ mostrarToast('Já está batendo — nenhum ajuste necessário'); return; }
+    state.movimentacoes.push({
+      id: uid(), data: todayISO(), tipo: delta > 0 ? 'entrada' : 'saida', valor: Math.abs(delta),
+      categoria: 'Outros', descricao: 'Ajuste de saldo', formaPagamento: 'Outros',
+      recorrente:false, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm: new Date().toISOString()
+    });
+    limparCache();
+    await salvarMovimentacoes();
+    document.getElementById('cfgSaldoReal').value = '';
+    mostrarToast('Saldo recalibrado');
+    irPara('dashboard');
   });
   document.getElementById('btnZerarTudo').addEventListener('click', async () => {
     if(!confirm('Isso vai apagar todas as movimentações, metas e ajustes de gasto diário. Deseja continuar?')) return;
