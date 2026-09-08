@@ -103,6 +103,18 @@
   .performance-banner.pos{background:var(--primary-soft);color:var(--primary);border:1px solid rgba(34,227,178,.3);}
   .performance-banner.neg{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(255,107,133,.3);}
 
+  .ajuste-box{background:var(--surface);border-radius:var(--radius);padding:14px 15px;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.07);margin-bottom:16px;}
+  .ajuste-titulo{font-size:11.5px;color:var(--ink-faint);margin:0 0 10px;}
+  .ajuste-linhas{display:flex;gap:10px;margin-bottom:10px;}
+  .ajuste-linhas div{flex:1;background:var(--surface-alt);border-radius:10px;padding:8px 10px;}
+  .ajuste-linhas span{display:block;font-size:10.5px;color:var(--ink-faint);margin-bottom:2px;}
+  .ajuste-linhas b{display:block;font-size:14px;font-weight:600;}
+  .ajuste-resultado{font-size:13px;font-weight:500;padding-top:10px;border-top:1px solid var(--line);line-height:1.4;}
+  .ajuste-resultado .valor{font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .ajuste-resultado.pos .valor{color:var(--primary);}
+  .ajuste-resultado.neg .valor{color:var(--danger);}
+  .sim-intro{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;}
+
   .alertas{margin-bottom:16px;display:flex;flex-direction:column;gap:8px;}
   .alerta{padding:10px 12px;border-radius:12px;font-size:12.5px;display:flex;gap:8px;align-items:flex-start;}
   .alerta.atencao{background:var(--gold-soft);color:var(--gold);}
@@ -338,6 +350,15 @@
 
     <div class="performance-banner" id="performanceBanner"></div>
 
+    <div class="ajuste-box" id="ajusteBox">
+      <p class="ajuste-titulo">Média dos últimos meses reais</p>
+      <div class="ajuste-linhas">
+        <div><span>Entradas/mês</span><b class="mono pos" id="ajusteEntradas">R$ 0,00</b></div>
+        <div><span>Saídas/mês</span><b class="mono neg" id="ajusteSaidas">R$ 0,00</b></div>
+      </div>
+      <div class="ajuste-resultado" id="ajusteResultado"></div>
+    </div>
+
     <div class="orcamento-box" id="orcamentoBox">
       <div class="orcamento-top"><span>Orçamento do mês</span><span id="orcamentoTexto">R$ 0,00 / R$ 0,00</span></div>
       <div class="orcamento-track"><div class="orcamento-fill" id="orcamentoFill"></div></div>
@@ -422,6 +443,36 @@
     <div id="listaMetas"></div>
   </section>
 
+  <!-- ===== SIMULAÇÃO ===== -->
+  <section class="screen" id="screen-simulacao">
+    <div class="topbar"><h1>Simular decisão</h1></div>
+    <p class="sim-intro">Antes de gastar (ou receber) alguma coisa, teste aqui o impacto real nos próximos 12 meses — nada é lançado até você confirmar.</p>
+
+    <div class="tipo-toggle">
+      <button type="button" id="simBtnEntrada">↑ Entrada</button>
+      <button type="button" id="simBtnSaida">↓ Saída</button>
+    </div>
+    <div class="field"><label>Valor</label><input id="simValor" inputmode="numeric" placeholder="R$ 0,00"></div>
+    <div class="field"><label>Data</label><input type="date" id="simData"></div>
+    <div class="field"><label>Categoria</label><select id="simCategoria"></select></div>
+    <div class="checkbox-row"><input type="checkbox" id="simRecorrente"><label for="simRecorrente">Repetir todo mês</label></div>
+    <div class="field" id="simCampoQtd" style="display:none;"><label>Por quantos meses? (deixe vazio para sempre)</label><input type="number" id="simQtd" inputmode="numeric" min="1" placeholder="Ex: 5"></div>
+
+    <button class="btn-primario" id="btnSimular" style="width:100%;margin:6px 0 18px;">Simular impacto</button>
+
+    <div id="resultadoSimulacao" style="display:none;">
+      <div class="ajuste-resultado" id="simResumo" style="background:var(--surface);border-radius:var(--radius);padding:14px 15px;border:1px solid rgba(255,255,255,.07);margin-bottom:14px;"></div>
+      <div class="chart-box">
+        <h3>Saldo projetado: com x sem essa decisão</h3>
+        <div class="chart-canvas-wrap"><canvas id="chartSimulacao"></canvas></div>
+      </div>
+      <div class="modal-acoes" style="margin-top:14px;">
+        <button class="btn-secundario" id="btnDescartarSim">Descartar</button>
+        <button class="btn-primario" id="btnLancarSim">Lançar de verdade</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ===== CONFIGURAÇÕES ===== -->
   <section class="screen" id="screen-config">
     <div class="topbar"><h1>Configurações</h1></div>
@@ -452,7 +503,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-08-aa</p>
+    <p class="versao-app">Versão do app: 2026-09-08-ac</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -483,6 +534,7 @@
         <button class="mais-item" data-screen="movs"><span class="mais-ico">💰</span>Movimentações</button>
         <button class="mais-item" data-screen="relatorios"><span class="mais-ico">📊</span>Relatórios</button>
         <button class="mais-item" data-screen="metas"><span class="mais-ico">🎯</span>Metas financeiras</button>
+        <button class="mais-item" data-screen="simulacao"><span class="mais-ico">🔮</span>Simular uma decisão</button>
         <button class="mais-item" data-screen="config"><span class="mais-ico">⚙️</span>Configurações</button>
       </div>
     </div>
@@ -839,7 +891,7 @@
   new MutationObserver(atualizarTravaFundo).observe(document.body, { attributes:true, attributeFilter:['class'], subtree:true });
 
   // ================= navegação =================
-  const NOMES_TELA = { dashboard:'Visão geral', movs:'Movimentações', relatorios:'Relatórios', metas:'Metas', config:'Configurações' };
+  const NOMES_TELA = { dashboard:'Visão geral', movs:'Movimentações', relatorios:'Relatórios', metas:'Metas', config:'Configurações', simulacao:'Simular decisão' };
   function irPara(tela){
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-'+tela).classList.add('active');
@@ -849,6 +901,7 @@
     if(tela === 'relatorios') renderRelatorios();
     if(tela === 'metas') renderMetas();
     if(tela === 'config') renderConfig();
+    if(tela === 'simulacao') renderSimulacaoTela();
   }
   document.getElementById('btnAbrirMenu').addEventListener('click', () => {
     const atual = document.querySelector('.screen.active').id.replace('screen-','');
@@ -922,6 +975,38 @@
     }else{
       if(chartSaldo) chartSaldo.destroy();
       chartSaldo = criarGrafico(ctx, cfg);
+    }
+  }
+
+  function renderAjusteFinanceiro(){
+    const hoje = new Date();
+    let janela = [];
+    for(let i=-11; i<=0; i++){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+      janela.push({ano:d.getFullYear(), mes:d.getMonth()});
+    }
+    while(janela.length > 1){
+      const t = totaisDoMes(janela[0].ano, janela[0].mes);
+      if(t.entradas === 0 && t.saidaTotal === 0) janela.shift(); else break;
+    }
+    const ultimosReais = janela.slice(-3).map(j => totaisDoMes(j.ano,j.mes));
+    const mediaEntradas = ultimosReais.reduce((a,t)=>a+t.entradas,0)/ultimosReais.length;
+    const mediaSaidas = ultimosReais.reduce((a,t)=>a+t.saidaTotal,0)/ultimosReais.length;
+    const resultado = mediaEntradas - mediaSaidas;
+
+    document.getElementById('ajusteEntradas').textContent = fmt(mediaEntradas);
+    document.getElementById('ajusteSaidas').textContent = fmt(mediaSaidas);
+
+    const el = document.getElementById('ajusteResultado');
+    if(mediaEntradas === 0 && mediaSaidas === 0){
+      el.className = 'ajuste-resultado';
+      el.innerHTML = 'Ainda não há dados suficientes pra calcular sua média mensal.';
+    }else if(resultado >= 0){
+      el.className = 'ajuste-resultado pos';
+      el.innerHTML = 'Sobra <span class="valor">'+fmt(resultado)+'</span> por mês, no ritmo atual.';
+    }else{
+      el.className = 'ajuste-resultado neg';
+      el.innerHTML = 'Falta <span class="valor">'+fmt(Math.abs(resultado))+'</span> por mês — é o quanto você precisa cortar de gasto (ou aumentar de entrada) pra fechar no zero a zero.';
     }
   }
 
@@ -1004,6 +1089,111 @@
   document.getElementById('chartSaldoBox').addEventListener('click', () => abrirGraficoExpandido('saldo'));
   document.getElementById('chartComparativoBox').addEventListener('click', () => abrirGraficoExpandido('comparativo'));
 
+  // ================= SIMULAÇÃO =================
+  let simTipo = 'saida';
+  let chartSimulacao;
+  let ultimaSimulacao = null;
+
+  function renderSimulacaoTela(){
+    document.getElementById('simCategoria').innerHTML = CATEGORIAS.map(c=>'<option value="'+c+'">'+(CAT_ICONES[c]||'')+' '+c+'</option>').join('');
+    document.getElementById('simData').value = todayISO();
+    document.getElementById('resultadoSimulacao').style.display = 'none';
+    setSimTipo('saida');
+  }
+  function setSimTipo(tipo){
+    simTipo = tipo;
+    document.getElementById('simBtnEntrada').className = tipo==='entrada' ? 'active-entrada' : '';
+    document.getElementById('simBtnSaida').className = tipo==='saida' ? 'active-saida' : '';
+  }
+  document.getElementById('simBtnEntrada').addEventListener('click', () => setSimTipo('entrada'));
+  document.getElementById('simBtnSaida').addEventListener('click', () => setSimTipo('saida'));
+  bindMoney(document.getElementById('simValor'));
+  document.getElementById('simRecorrente').addEventListener('change', (e) => {
+    document.getElementById('simCampoQtd').style.display = e.target.checked ? 'block' : 'none';
+  });
+
+  function calcularImpactoSimulado(dataSim, tipoSim, valorCents, recorrenteSim, qtdSim){
+    const hoje = new Date();
+    const [ay,am] = dataSim.split('-').map(Number);
+    const simAno = ay, simMes = am-1;
+    const resultados = [];
+    for(let i=0; i<12; i++){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+      const ano = d.getFullYear(), mes = d.getMonth();
+      const baseline = totaisDoMes(ano,mes).saldoFinal;
+      const diferencaMeses = (ano-simAno)*12 + (mes-simMes);
+      let ocorrencias = 0;
+      if(diferencaMeses >= 0){
+        ocorrencias = recorrenteSim ? (qtdSim ? Math.min(diferencaMeses+1, qtdSim) : diferencaMeses+1) : 1;
+      }
+      const sinal = tipoSim==='entrada' ? 1 : -1;
+      const impacto = sinal * ocorrencias * valorCents;
+      resultados.push({ano, mes, baseline, simulado: baseline+impacto});
+    }
+    return resultados;
+  }
+
+  document.getElementById('btnSimular').addEventListener('click', () => {
+    const valor = centsFromInput(document.getElementById('simValor'));
+    if(valor <= 0){ mostrarToast('Informe um valor válido'); return; }
+    const data = document.getElementById('simData').value || todayISO();
+    const categoria = document.getElementById('simCategoria').value;
+    const recorrente = document.getElementById('simRecorrente').checked;
+    const qtd = recorrente ? (parseInt(document.getElementById('simQtd').value) || null) : null;
+
+    const resultados = calcularImpactoSimulado(data, simTipo, valor, recorrente, qtd);
+    ultimaSimulacao = { data, tipo:simTipo, valor, categoria, recorrente, qtd };
+
+    const ultimo = resultados[resultados.length-1];
+    const diferenca = ultimo.simulado - ultimo.baseline;
+    const nomeUltimoMes = MESES[ultimo.mes] + '/' + ultimo.ano;
+    const resumo = document.getElementById('simResumo');
+    resumo.className = 'ajuste-resultado ' + (diferenca >= 0 ? 'pos' : 'neg');
+    resumo.innerHTML = 'Em ' + nomeUltimoMes + ', seu saldo projetado seria <span class="valor">' + fmt(ultimo.simulado) + '</span>' +
+      ' em vez de <span class="valor">' + fmt(ultimo.baseline) + '</span> — uma diferença de <span class="valor">' +
+      (diferenca>=0?'+':'') + fmt(diferenca) + '</span> por causa dessa decisão.';
+
+    const ctx = document.getElementById('chartSimulacao').getContext('2d');
+    if(chartSimulacao) chartSimulacao.destroy();
+    chartSimulacao = criarGrafico(ctx, {
+      type:'line',
+      data:{
+        labels: resultados.map(r => MESES_ABREV[r.mes]+'/'+String(r.ano).slice(2)),
+        datasets:[
+          {label:'Sem essa decisão', data: resultados.map(r=>r.baseline/100), borderColor:'#5C6B80', backgroundColor:'transparent', borderDash:[5,4], tension:.3, pointRadius:0, borderWidth:2},
+          {label:'Com essa decisão', data: resultados.map(r=>r.simulado/100), borderColor: diferenca>=0?'#22E3B2':'#FF6B85', backgroundColor: diferenca>=0?'rgba(34,227,178,.12)':'rgba(255,107,133,.12)', fill:true, tension:.3, pointRadius:0, borderWidth:2.5}
+        ]
+      },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:'bottom',labels:{boxWidth:10,font:{size:10.5},color:'#93A2B8'}},
+          tooltip:{backgroundColor:'#121826',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#EAF1F7',bodyColor:'#93A2B8',padding:10,
+            callbacks:{label: ctx => ctx.dataset.label+': R$ '+ctx.formattedValue}}},
+        scales:{ x:{ticks:{color:'#5C6B80',font:{size:10}},grid:{display:false}}, y:{ticks:{callback:v=>'R$ '+v,color:'#5C6B80',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'}} }
+      }
+    });
+
+    document.getElementById('resultadoSimulacao').style.display = 'block';
+  });
+
+  document.getElementById('btnDescartarSim').addEventListener('click', () => {
+    ultimaSimulacao = null;
+    document.getElementById('resultadoSimulacao').style.display = 'none';
+    mostrarToast('Simulação descartada');
+  });
+
+  document.getElementById('btnLancarSim').addEventListener('click', () => {
+    if(!ultimaSimulacao) return;
+    abrirModalMov(null);
+    setTipoModal(ultimaSimulacao.tipo, false);
+    document.getElementById('movData').value = ultimaSimulacao.data;
+    setMoneyValue(document.getElementById('movValor'), ultimaSimulacao.valor);
+    document.getElementById('movCategoria').value = ultimaSimulacao.categoria;
+    document.getElementById('movRecorrente').checked = ultimaSimulacao.recorrente;
+    document.getElementById('campoRecorrenteAte').style.display = ultimaSimulacao.recorrente ? 'block' : 'none';
+    if(ultimaSimulacao.qtd) document.getElementById('movRecorrenteQtd').value = ultimaSimulacao.qtd;
+    mostrarToast('Confirme os dados e toque em Salvar');
+  });
+
   function renderDashboard(){
     garantirRecorrencias(filtro.ano, filtro.mes);
     const dashMes = document.getElementById('dashMes'), dashAno = document.getElementById('dashAno');
@@ -1029,6 +1219,8 @@
       banner.className = 'performance-banner neg';
       banner.textContent = '⚠ Atenção: seus gastos superaram suas entradas.';
     }
+
+    renderAjusteFinanceiro();
 
     const alerts = gerarAlertas(filtro.ano, filtro.mes);
     document.getElementById('alertasBox').innerHTML = alerts.map(a =>
