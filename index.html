@@ -514,7 +514,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-09-ag</p>
+    <p class="versao-app">Versão do app: 2026-09-09-ah</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1303,7 +1303,7 @@
 
   // ================= MOVIMENTAÇÕES =================
   const PERIODOS = ['Tudo','Hoje','Este mês','Último mês','Próximo mês','Este ano','Escolher mês'];
-  let periodoAtivo = 'Tudo';
+  let periodoAtivo = 'Este mês';
   function renderMovs(){
     const anoAtual = new Date().getFullYear();
     for(let m=0; m<12; m++) garantirRecorrencias(anoAtual, m);
@@ -1508,15 +1508,10 @@
     limparCache(); salvarMovimentacoes();
     document.getElementById('modalMov').classList.remove('show');
     mostrarToast(aplicarTodas ? 'Todas as repetições foram atualizadas' : 'Movimentação salva');
-    // garante que o lançamento recém-salvo fique visível, mesmo se havia filtro ativo
+    // limpa categoria/tipo/busca (mas não mexe no filtro de período — esse só muda se o usuário tocar nele)
     document.getElementById('filtroCategoria').value = '';
     document.getElementById('filtroTipo').value = '';
     document.getElementById('buscaMov').value = '';
-    const hojeReal = new Date();
-    const dataSalva = new Date(data+'T00:00:00');
-    const mesmoMes = dataSalva.getFullYear() === hojeReal.getFullYear() && dataSalva.getMonth() === hojeReal.getMonth();
-    periodoAtivo = mesmoMes ? 'Este mês' : 'Tudo';
-    document.querySelectorAll('#chipsPeriodo .chip').forEach(c => c.classList.toggle('active', c.dataset.p === periodoAtivo));
     renderTelaAtual();
   });
   document.getElementById('btnExcluirMov').addEventListener('click', () => {
