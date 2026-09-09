@@ -338,7 +338,7 @@
 
     <div class="cards-grid">
       <div class="card destaque full">
-        <p class="card-label">Saldo atual</p>
+        <p class="card-label">Saldo atual <span id="cardSaldoData" style="font-weight:400;opacity:.75;"></span></p>
         <p class="card-valor" id="cardSaldo">R$ 0,00</p>
       </div>
       <div class="card"><p class="card-label">Entradas</p><p class="card-valor pos" id="cardEntradas">R$ 0,00</p></div>
@@ -510,7 +510,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-08-ad</p>
+    <p class="versao-app">Versão do app: 2026-09-09-ae</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -811,6 +811,13 @@
     const pct = entradas > 0 ? (economia/entradas*100) : 0;
     return { entradas, saidas, diario, saidaTotal, economia, performance: economia, pct,
       saldoInicial: saldoInicialDoMes(ano,mes), saldoFinal: saldoFinalDoMes(ano,mes) };
+  }
+
+  // saldo real "de hoje": soma tudo até a data de hoje, ignorando lançamentos futuros dentro do mesmo mês
+  function saldoAteHoje(){
+    const hoje = new Date();
+    const dias = saldosDiariosDoMes(hoje.getFullYear(), hoje.getMonth());
+    return dias[hoje.getDate()-1].saldo;
   }
 
   function garantirRecorrencias(ano,mes){
@@ -1209,7 +1216,8 @@
     dashMes.value = filtro.mes; dashAno.value = filtro.ano;
 
     const t = totaisDoMes(filtro.ano, filtro.mes);
-    document.getElementById('cardSaldo').textContent = fmt(t.saldoFinal);
+    document.getElementById('cardSaldo').textContent = fmt(saldoAteHoje());
+    document.getElementById('cardSaldoData').textContent = '(hoje, ' + formatBR(todayISO()) + ')';
     document.getElementById('cardEntradas').textContent = fmt(t.entradas);
     document.getElementById('cardSaidas').textContent = fmt(t.saidas);
     document.getElementById('cardDiario').textContent = fmt(t.diario);
