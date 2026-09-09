@@ -113,6 +113,7 @@
   .ajuste-resultado .valor{font-family:'JetBrains Mono',monospace;font-weight:600;}
   .ajuste-resultado.pos .valor{color:var(--primary);}
   .ajuste-resultado.neg .valor{color:var(--danger);}
+  .btn-simular-destaque{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(255,180,73,.35);background:var(--gold-soft);color:var(--gold);font-weight:600;font-size:13.5px;font-family:inherit;cursor:pointer;margin-bottom:16px;}
   .sim-intro{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;}
 
   .alertas{margin-bottom:16px;display:flex;flex-direction:column;gap:8px;}
@@ -359,6 +360,13 @@
       <div class="ajuste-resultado" id="ajusteResultado"></div>
     </div>
 
+    <div class="ajuste-box" id="folegoBox" style="display:none;">
+      <p class="ajuste-titulo" id="folegoTitulo">Fôlego até o próximo recebimento</p>
+      <div class="ajuste-resultado" id="folegoResultado"></div>
+    </div>
+
+    <button class="btn-simular-destaque" id="btnAtalhoSimular">🔮 Testar uma decisão antes de gastar</button>
+
     <div class="orcamento-box" id="orcamentoBox">
       <div class="orcamento-top"><span>Orçamento do mês</span><span id="orcamentoTexto">R$ 0,00 / R$ 0,00</span></div>
       <div class="orcamento-track"><div class="orcamento-fill" id="orcamentoFill"></div></div>
@@ -515,7 +523,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-09-ai</p>
+    <p class="versao-app">Versão do app: 2026-09-09-ak</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -923,6 +931,7 @@
     if(tela === 'config') renderConfig();
     if(tela === 'simulacao') renderSimulacaoTela();
   }
+  document.getElementById('btnAtalhoSimular').addEventListener('click', () => irPara('simulacao'));
   document.getElementById('btnAbrirMenu').addEventListener('click', () => {
     const atual = document.querySelector('.screen.active').id.replace('screen-','');
     document.querySelectorAll('.mais-item').forEach(b => b.classList.toggle('mais-item-atual', b.dataset.screen === atual));
@@ -995,6 +1004,54 @@
     }else{
       if(chartSaldo) chartSaldo.destroy();
       chartSaldo = criarGrafico(ctx, cfg);
+    }
+  }
+
+  function proximaEntradaRecorrente(){
+    const hoje = new Date();
+    garantirRecorrencias(hoje.getFullYear(), hoje.getMonth());
+    const prox = new Date(hoje.getFullYear(), hoje.getMonth()+1, 1);
+    garantirRecorrencias(prox.getFullYear(), prox.getMonth());
+    const hojeISO = todayISO();
+    const candidatas = state.movimentacoes.filter(m => m.tipo==='entrada' && m.data >= hojeISO && (m.recorrente || m.origemRecorrenteId));
+    if(candidatas.length === 0) return null;
+    candidatas.sort((a,b)=>a.data.localeCompare(b.data));
+    const salario = candidatas.find(m=>m.categoria==='Salário');
+    return salario || candidatas[0];
+  }
+
+  function renderFolego(){
+    const box = document.getElementById('folegoBox');
+    const prox = proximaEntradaRecorrente();
+    if(!prox){ box.style.display = 'none'; return; }
+    box.style.display = 'block';
+
+    const hoje = new Date();
+    const inicio = new Date(hoje); inicio.setDate(inicio.getDate()+1);
+    const fim = new Date(prox.data+'T00:00:00');
+    let saidasPeriodo = 0, entradasPeriodo = 0;
+    if(inicio <= fim){
+      let d = new Date(inicio);
+      while(d <= fim){
+        const iso = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+        const t = totaisDoDia(iso);
+        saidasPeriodo += t.saidas + t.diario;
+        entradasPeriodo += t.entradas;
+        d.setDate(d.getDate()+1);
+      }
+    }
+    const saldoHoje = saldoAteHoje();
+    const resultado = saldoHoje + entradasPeriodo - saidasPeriodo;
+    const dataFormatada = formatBR(prox.data);
+
+    document.getElementById('folegoTitulo').textContent = 'Fôlego até ' + dataFormatada + ' (' + (prox.descricao || prox.categoria) + ')';
+    const el = document.getElementById('folegoResultado');
+    if(resultado >= 0){
+      el.className = 'ajuste-resultado pos';
+      el.innerHTML = 'Sobra <span class="valor">'+fmt(resultado)+'</span> até lá — os gastos previstos até essa data já estão cobertos pelo seu saldo de hoje.';
+    }else{
+      el.className = 'ajuste-resultado neg';
+      el.innerHTML = 'Falta <span class="valor">'+fmt(Math.abs(resultado))+'</span> até lá — é o quanto você precisaria ter a mais hoje (ou deixar de gastar) pra não apertar antes de '+dataFormatada+'.';
     }
   }
 
@@ -1242,6 +1299,7 @@
     }
 
     renderAjusteFinanceiro();
+    renderFolego();
 
     const alerts = gerarAlertas(filtro.ano, filtro.mes);
     document.getElementById('alertasBox').innerHTML = alerts.map(a =>
