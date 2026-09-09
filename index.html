@@ -514,7 +514,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-09-af</p>
+    <p class="versao-app">Versão do app: 2026-09-09-ag</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -569,6 +569,7 @@
       <div class="field"><label>Forma de pagamento</label><select id="movForma"></select></div>
       <div class="checkbox-row"><input type="checkbox" id="movRecorrente"><label for="movRecorrente">Repetir todo mês</label></div>
       <div class="field" id="campoRecorrenteAte" style="display:none;"><label>Repetir por quantos meses? (deixe vazio para repetir sempre)</label><input type="number" id="movRecorrenteQtd" inputmode="numeric" min="1" placeholder="Ex: 5"></div>
+      <div class="checkbox-row" id="checkboxAplicarTodas" style="display:none;"><input type="checkbox" id="movAplicarTodas"><label for="movAplicarTodas">Aplicar essa mudança a todas as repetições desta conta</label></div>
       <div class="modal-acoes">
         <button class="btn-excluir" id="btnExcluirMov" style="display:none;">Excluir</button>
         <button class="btn-primario" id="btnSalvarMov">Salvar</button>
@@ -1424,11 +1425,22 @@
   document.getElementById('btnTipoEntrada').addEventListener('click', () => setTipoModal('entrada', true));
   document.getElementById('btnTipoSaida').addEventListener('click', () => setTipoModal('saida', true));
 
+  function idOrigemDaSerie(m){
+    if(!m) return null;
+    if(m.origemRecorrenteId) return m.origemRecorrenteId;
+    if(m.recorrente) return m.id;
+    return null;
+  }
+  function movimentacoesDaSerie(origemId){
+    return state.movimentacoes.filter(m => m.id === origemId || m.origemRecorrenteId === origemId);
+  }
+
   function abrirModalMov(id){
     popularSelectsMov();
     const editando = !!id;
     document.getElementById('modalMovTitulo').textContent = editando ? 'Editar movimentação' : 'Nova movimentação';
     document.getElementById('btnExcluirMov').style.display = editando ? 'block' : 'none';
+    document.getElementById('movAplicarTodas').checked = false;
     if(editando){
       const m = state.movimentacoes.find(x=>x.id===id);
       document.getElementById('movId').value = m.id;
@@ -1440,6 +1452,7 @@
       document.getElementById('movForma').value = m.formaPagamento;
       document.getElementById('movRecorrente').checked = !!m.recorrente;
       document.getElementById('movRecorrenteQtd').value = m.recorrenteQtdMeses || '';
+      document.getElementById('checkboxAplicarTodas').style.display = idOrigemDaSerie(m) ? 'flex' : 'none';
     }else{
       document.getElementById('movId').value = '';
       setTipoModal('saida', false);
@@ -1450,6 +1463,7 @@
       document.getElementById('movForma').selectedIndex = 0;
       document.getElementById('movRecorrente').checked = false;
       document.getElementById('movRecorrenteQtd').value = '';
+      document.getElementById('checkboxAplicarTodas').style.display = 'none';
     }
     document.getElementById('campoRecorrenteAte').style.display = document.getElementById('movRecorrente').checked ? 'block' : 'none';
     document.getElementById('modalMov').classList.add('show');
@@ -1468,22 +1482,32 @@
     if(!categoria){ mostrarToast('Escolha uma categoria'); return; }
     const id = document.getElementById('movId').value;
     const recorrente = document.getElementById('movRecorrente').checked;
-    const payload = {
-      tipo: tipoSelecionado, data, valor, categoria,
+    const recorrenteQtdMeses = recorrente ? (parseInt(document.getElementById('movRecorrenteQtd').value) || null) : null;
+    const aplicarTodas = document.getElementById('movAplicarTodas').checked;
+    const payloadComum = {
+      tipo: tipoSelecionado, valor, categoria,
       descricao: document.getElementById('movDescricao').value.trim(),
-      formaPagamento: document.getElementById('movForma').value,
-      recorrente,
-      recorrenteQtdMeses: recorrente ? (parseInt(document.getElementById('movRecorrenteQtd').value) || null) : null
+      formaPagamento: document.getElementById('movForma').value
     };
     if(id){
-      const idx = state.movimentacoes.findIndex(m=>m.id===id);
-      state.movimentacoes[idx] = { ...state.movimentacoes[idx], ...payload };
+      const atual = state.movimentacoes.find(m=>m.id===id);
+      const origemId = idOrigemDaSerie(atual);
+      if(aplicarTodas && origemId){
+        movimentacoesDaSerie(origemId).forEach(m => {
+          Object.assign(m, payloadComum);
+          if(m.id === origemId){ m.recorrente = recorrente; m.recorrenteQtdMeses = recorrenteQtdMeses; }
+        });
+        atual.data = data;
+      }else{
+        const idx = state.movimentacoes.findIndex(m=>m.id===id);
+        state.movimentacoes[idx] = { ...state.movimentacoes[idx], ...payloadComum, data, recorrente, recorrenteQtdMeses };
+      }
     }else{
-      state.movimentacoes.push({ id: uid(), origemRecorrenteId:null, criadoEm:new Date().toISOString(), ...payload });
+      state.movimentacoes.push({ id: uid(), origemRecorrenteId:null, criadoEm:new Date().toISOString(), ...payloadComum, data, recorrente, recorrenteQtdMeses });
     }
     limparCache(); salvarMovimentacoes();
     document.getElementById('modalMov').classList.remove('show');
-    mostrarToast('Movimentação salva');
+    mostrarToast(aplicarTodas ? 'Todas as repetições foram atualizadas' : 'Movimentação salva');
     // garante que o lançamento recém-salvo fique visível, mesmo se havia filtro ativo
     document.getElementById('filtroCategoria').value = '';
     document.getElementById('filtroTipo').value = '';
@@ -1497,11 +1521,19 @@
   });
   document.getElementById('btnExcluirMov').addEventListener('click', () => {
     const id = document.getElementById('movId').value;
-    if(!confirm('Excluir esta movimentação?')) return;
-    state.movimentacoes = state.movimentacoes.filter(m=>m.id!==id);
+    const atual = state.movimentacoes.find(m=>m.id===id);
+    const origemId = idOrigemDaSerie(atual);
+    const aplicarTodas = document.getElementById('movAplicarTodas').checked;
+    if(aplicarTodas && origemId){
+      if(!confirm('Isso vai excluir TODAS as repetições dessa conta (passadas e futuras). Continuar?')) return;
+      state.movimentacoes = state.movimentacoes.filter(m => m.id !== origemId && m.origemRecorrenteId !== origemId);
+    }else{
+      if(!confirm('Excluir esta movimentação?')) return;
+      state.movimentacoes = state.movimentacoes.filter(m=>m.id!==id);
+    }
     limparCache(); salvarMovimentacoes();
     document.getElementById('modalMov').classList.remove('show');
-    mostrarToast('Movimentação excluída');
+    mostrarToast(aplicarTodas ? 'Repetições excluídas' : 'Movimentação excluída');
     renderTelaAtual();
   });
 
