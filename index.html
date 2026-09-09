@@ -383,6 +383,10 @@
     <p class="hoje-hint" id="hojeHint"></p>
     <div class="search-row"><input type="text" id="buscaMov" placeholder="Buscar por categoria ou descrição"></div>
     <div class="chips" id="chipsPeriodo"></div>
+    <div class="filtros-select" id="filtroMesEspecifico" style="display:none;">
+      <select id="filtroMes"></select>
+      <select id="filtroAno"></select>
+    </div>
     <div class="filtros-select">
       <select id="filtroCategoria"><option value="">Todas categorias</option></select>
       <select id="filtroTipo"><option value="">Todos os tipos</option><option value="entrada">Entradas</option><option value="saida">Saídas</option></select>
@@ -510,7 +514,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-09-ae</p>
+    <p class="versao-app">Versão do app: 2026-09-09-af</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1297,7 +1301,7 @@
   });
 
   // ================= MOVIMENTAÇÕES =================
-  const PERIODOS = ['Tudo','Hoje','Este mês','Último mês','Próximo mês','Este ano'];
+  const PERIODOS = ['Tudo','Hoje','Este mês','Último mês','Próximo mês','Este ano','Escolher mês'];
   let periodoAtivo = 'Tudo';
   function renderMovs(){
     const anoAtual = new Date().getFullYear();
@@ -1312,9 +1316,21 @@
       chips.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
         periodoAtivo = c.dataset.p;
         chips.querySelectorAll('.chip').forEach(x=>x.classList.toggle('active', x===c));
+        document.getElementById('filtroMesEspecifico').style.display = (periodoAtivo === 'Escolher mês') ? 'flex' : 'none';
         renderListaMovs();
       }));
     }
+    const selMes = document.getElementById('filtroMes'), selAno = document.getElementById('filtroAno');
+    if(!selMes.dataset.ready){
+      popularSelectMeses(selMes);
+      selMes.value = new Date().getMonth();
+      popularSelectAnos(selAno, new Date().getFullYear());
+      selAno.value = new Date().getFullYear();
+      selMes.dataset.ready = '1';
+      selMes.addEventListener('change', renderListaMovs);
+      selAno.addEventListener('change', renderListaMovs);
+    }
+    document.getElementById('filtroMesEspecifico').style.display = (periodoAtivo === 'Escolher mês') ? 'flex' : 'none';
     const catSel = document.getElementById('filtroCategoria');
     if(!catSel.dataset.ready){
       catSel.innerHTML += CATEGORIAS.map(c=>'<option value="'+c+'">'+(CAT_ICONES[c]||'')+' '+c+'</option>').join('');
@@ -1338,6 +1354,12 @@
       return [isoDate(a,m,1), isoDate(a,m,daysInMonth(a,m))];
     }
     if(p==='Este ano') return [isoDate(hoje.getFullYear(),0,1), isoDate(hoje.getFullYear(),11,31)];
+    if(p==='Escolher mês'){
+      const m = Number(document.getElementById('filtroMes').value);
+      const a = Number(document.getElementById('filtroAno').value);
+      garantirRecorrencias(a, m);
+      return [isoDate(a,m,1), isoDate(a,m,daysInMonth(a,m))];
+    }
     return null;
   }
   function renderListaMovs(){
