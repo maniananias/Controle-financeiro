@@ -418,6 +418,7 @@
 
     <div class="rel-view" id="rel-evolucao">
       <div class="ano-compare-select"><select id="evolAno"></select></div>
+      <p class="chart-hint" id="evolucaoHint" style="display:none;cursor:pointer;text-decoration:underline;"></p>
       <div class="chart-box"><h3>Saldo final por mês</h3><div class="chart-canvas-wrap"><canvas id="chartSaldoAnual"></canvas></div></div>
       <div class="chart-box"><h3>Economia por mês</h3><div class="chart-canvas-wrap"><canvas id="chartEconomiaAnual"></canvas></div></div>
     </div>
@@ -514,7 +515,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-09-ah</p>
+    <p class="versao-app">Versão do app: 2026-09-09-ai</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1558,11 +1559,23 @@
     document.getElementById('rel-'+tab.dataset.rel).classList.add('active');
   }));
 
+  let fechamentoMostrarTudo = false;
   function renderFechamento(){
     const ano = Number(document.getElementById('fechamentoAno').value || filtro.ano);
+    const totaisAno = MESES.map((_,m) => totaisDoMes(ano,m));
+    let primeiroComDado = totaisAno.findIndex(t => t.entradas!==0 || t.saidaTotal!==0);
+    if(primeiroComDado === -1) primeiroComDado = 0;
+    const inicio = fechamentoMostrarTudo ? 0 : primeiroComDado;
+
     let html = '';
+    if(inicio > 0){
+      html += '<button class="link-btn" id="btnFechamentoMostrarTudo" style="margin-bottom:10px;">Mostrar os '+inicio+' meses anteriores sem lançamento ↓</button>';
+    }else if(fechamentoMostrarTudo){
+      html += '<button class="link-btn" id="btnFechamentoMostrarTudo" style="margin-bottom:10px;">Ocultar meses sem lançamento ↑</button>';
+    }
     MESES.forEach((nome,m) => {
-      const t = totaisDoMes(ano,m);
+      if(m < inicio) return;
+      const t = totaisAno[m];
       const corEconomia = t.economia>=0?'#22E3B2':'#FF6B85';
       html += '<div class="mes-card">'+
         '<div class="mes-card-top"><span class="mes-card-nome">'+nome+'</span><span class="mes-card-saldo">'+fmt(t.saldoFinal)+'</span></div>'+
@@ -1575,12 +1588,15 @@
       '</div>';
     });
     document.getElementById('tabelaFechamento').innerHTML = html;
+    const btnToggle = document.getElementById('btnFechamentoMostrarTudo');
+    if(btnToggle) btnToggle.addEventListener('click', () => { fechamentoMostrarTudo = !fechamentoMostrarTudo; renderFechamento(); });
   }
   document.getElementById('fechamentoAno').addEventListener('change', renderFechamento);
 
   function renderCategorias(){
     const ano = Number(document.getElementById('catAno').value || filtro.ano);
     const mes = Number(document.getElementById('catMes').value || filtro.mes);
+    garantirRecorrencias(ano, mes);
     const n = daysInMonth(ano,mes);
     const porCategoria = {};
     for(let d=1; d<=n; d++){
@@ -1616,23 +1632,42 @@
   document.getElementById('catAno').addEventListener('change', renderCategorias);
   document.getElementById('catMes').addEventListener('change', renderCategorias);
 
+  let evolucaoMostrarTudo = false;
   function renderEvolucao(){
     const ano = Number(document.getElementById('evolAno').value || filtro.ano);
-    const totais = MESES.map((_,m)=>totaisDoMes(ano,m));
+    const totaisCompletos = MESES.map((_,m)=>totaisDoMes(ano,m));
+    let primeiroComDado = totaisCompletos.findIndex(t => t.entradas!==0 || t.saidaTotal!==0);
+    if(primeiroComDado === -1) primeiroComDado = 0;
+    const inicio = evolucaoMostrarTudo ? 0 : primeiroComDado;
+    const totais = totaisCompletos.slice(inicio);
+    const labels = MESES_ABREV.slice(inicio);
+
+    const hintEl = document.getElementById('evolucaoHint');
+    if(inicio > 0){
+      hintEl.style.display = 'block';
+      hintEl.textContent = 'Ocultando ' + inicio + ' meses sem lançamento — toque para mostrar todos ↓';
+    }else if(evolucaoMostrarTudo && primeiroComDado > 0){
+      hintEl.style.display = 'block';
+      hintEl.textContent = 'Mostrando todos os 12 meses — toque para ocultar os vazios ↑';
+    }else{
+      hintEl.style.display = 'none';
+    }
+
     const ctx1 = document.getElementById('chartSaldoAnual').getContext('2d');
     if(chartSaldoAnual) chartSaldoAnual.destroy();
-    chartSaldoAnual = criarGrafico(ctx1, { type:'line', data:{ labels:MESES_ABREV, datasets:[{ data: totais.map(t=>t.saldoFinal/100), borderColor:'#22E3B2', backgroundColor:'rgba(34,227,178,.14)', fill:true, tension:.3 }] }, options:{ plugins:{legend:{display:false}},
-      onClick:(evt,elements)=>{ if(!elements.length) return; filtro.ano=ano; filtro.mes=elements[0].index; irPara('dashboard'); },
+    chartSaldoAnual = criarGrafico(ctx1, { type:'line', data:{ labels, datasets:[{ data: totais.map(t=>t.saldoFinal/100), borderColor:'#22E3B2', backgroundColor:'rgba(34,227,178,.14)', fill:true, tension:.3 }] }, options:{ plugins:{legend:{display:false}},
+      onClick:(evt,elements)=>{ if(!elements.length) return; filtro.ano=ano; filtro.mes=elements[0].index+inicio; irPara('dashboard'); },
       onHover:(evt,elements)=>{ evt.native.target.style.cursor = elements.length?'pointer':'default'; }
     } });
     const ctx2 = document.getElementById('chartEconomiaAnual').getContext('2d');
     if(chartEconomiaAnual) chartEconomiaAnual.destroy();
-    chartEconomiaAnual = criarGrafico(ctx2, { type:'bar', data:{ labels:MESES_ABREV, datasets:[{ data: totais.map(t=>t.economia/100), backgroundColor: totais.map(t=>t.economia>=0?'#22E3B2':'#FF6B85') }] }, options:{ plugins:{legend:{display:false}},
-      onClick:(evt,elements)=>{ if(!elements.length) return; filtro.ano=ano; filtro.mes=elements[0].index; irPara('dashboard'); },
+    chartEconomiaAnual = criarGrafico(ctx2, { type:'bar', data:{ labels, datasets:[{ data: totais.map(t=>t.economia/100), backgroundColor: totais.map(t=>t.economia>=0?'#22E3B2':'#FF6B85') }] }, options:{ plugins:{legend:{display:false}},
+      onClick:(evt,elements)=>{ if(!elements.length) return; filtro.ano=ano; filtro.mes=elements[0].index+inicio; irPara('dashboard'); },
       onHover:(evt,elements)=>{ evt.native.target.style.cursor = elements.length?'pointer':'default'; }
     } });
   }
   document.getElementById('evolAno').addEventListener('change', renderEvolucao);
+  document.getElementById('evolucaoHint').addEventListener('click', () => { evolucaoMostrarTudo = !evolucaoMostrarTudo; renderEvolucao(); });
 
   function renderComparacao(){
     const anoA = Number(document.getElementById('compAnoA').value || filtro.ano-1);
