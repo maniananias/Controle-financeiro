@@ -122,13 +122,32 @@
   .ajuste-resultado .valor{font-family:'JetBrains Mono',monospace;font-weight:600;}
   .ajuste-resultado.pos .valor{color:var(--primary);}
   .ajuste-resultado.neg .valor{color:var(--danger);}
-  .folego-linha{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dotted var(--rule,var(--line));font-size:13px;}
+  .sim-veredito{font-size:14px;font-weight:500;line-height:1.5;padding:16px 16px 16px 18px;border-radius:var(--radius);margin-bottom:14px;background:var(--surface);border:1px solid rgba(255,255,255,.07);border-left:4px solid var(--line);}
+  .sim-veredito .valor{font-family:'JetBrains Mono',monospace;font-weight:700;}
+  .sim-veredito.pos{border-left-color:var(--primary);background:linear-gradient(90deg, rgba(34,227,178,.09), var(--surface) 40%);}
+  .sim-veredito.pos .valor{color:var(--primary);}
+  .sim-veredito.neg{border-left-color:var(--danger);background:linear-gradient(90deg, rgba(255,107,133,.10), var(--surface) 40%);}
+  .sim-veredito.neg .valor{color:var(--danger);}
+  .sim-campo-aninhado{margin:-4px 0 14px 4px;padding-left:14px;border-left:2px solid var(--line);}
+  .folego-linha{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dotted var(--rule,var(--line));font-size:13px;flex-wrap:wrap;gap:4px;}
   .folego-linha:last-child{border-bottom:none;}
   .folego-linha .mes-nome{color:var(--ink-soft);}
   .folego-linha .mes-nome.atual{color:var(--ink);font-weight:600;}
   .folego-linha b{font-family:'JetBrains Mono',monospace;font-weight:600;}
   .folego-linha b.pos{color:var(--primary);}
   .folego-linha b.neg{color:var(--danger);}
+  .folego-seta{color:var(--ink-soft);opacity:.5;font-size:13px;}
+  .folego-linha-v2{padding:10px 0;border-bottom:1px dotted var(--rule,var(--line));}
+  .folego-linha-v2:last-child{border-bottom:none;}
+  .folego-mes-header{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+  .folego-mes-header small{font-weight:500;color:var(--ink-soft);opacity:.7;}
+  .folego-comparativo{display:flex;align-items:center;gap:8px;}
+  .folego-col{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+  .folego-rotulo{font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);opacity:.6;}
+  .folego-col b{font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:700;}
+  .folego-col b.pos{color:var(--primary);}
+  .folego-col b.neg{color:var(--danger);}
+  .folego-valor-neutro{color:var(--ink-soft);}
   .btn-simular-destaque{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(255,180,73,.35);background:var(--gold-soft);color:var(--gold);font-weight:600;font-size:13.5px;font-family:inherit;cursor:pointer;margin-bottom:16px;}
   .sim-intro{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;}
 
@@ -554,12 +573,12 @@
     <div class="field"><label>Data</label><input type="date" id="simData"></div>
     <div class="field"><label>Categoria</label><select id="simCategoria"></select></div>
     <div class="checkbox-row"><input type="checkbox" id="simRecorrente"><label for="simRecorrente">Repetir todo mês</label></div>
-    <div class="field" id="simCampoQtd" style="display:none;"><label>Por quantos meses? (deixe vazio para sempre)</label><input type="number" id="simQtd" inputmode="numeric" min="1" placeholder="Ex: 5"></div>
+    <div class="field sim-campo-aninhado" id="simCampoQtd" style="display:none;"><label>Por quantos meses? (deixe vazio para sempre)</label><input type="number" id="simQtd" inputmode="numeric" min="1" placeholder="Ex: 5"></div>
 
     <button class="btn-primario" id="btnSimular" style="width:100%;margin:6px 0 18px;">Simular impacto</button>
 
     <div id="resultadoSimulacao" style="display:none;">
-      <div class="ajuste-resultado" id="simResumo" style="background:var(--surface);border-radius:var(--radius);padding:14px 15px;border:1px solid rgba(255,255,255,.07);margin-bottom:14px;"></div>
+      <div class="sim-veredito" id="simResumo"></div>
       <div class="ajuste-box" id="simFolegoBox" style="display:none;">
         <p class="ajuste-titulo">Fôlego mês a mês: com x sem essa decisão</p>
         <div id="simFolegoLista"></div>
@@ -609,7 +628,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-ca</p>
+    <p class="versao-app">Versão do app: 2026-09-11-ch</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1452,7 +1471,8 @@
     const diaSimulado = Number(dataSim.split('-')[2]);
     const sinal = tipoSim==='entrada' ? 1 : -1;
     const resultados = [];
-    for(let i=0; i<6; i++){
+    let parcelasUsadas = 0;
+    for(let i=0; i<12; i++){
       const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
       const ano = d.getFullYear(), mes = d.getMonth();
       garantirRecorrencias(ano, mes);
@@ -1471,14 +1491,19 @@
       const dias = saldosDiariosDoMes(ano, mes);
       const baseline = dias[diaAntes-1].saldo;
 
-      // uma parcela recorrente por mês (não acumula as anteriores); gasto único conta uma vez e persiste dali pra frente
+      // uma parcela recorrente por mês (não acumula as anteriores); gasto único conta uma vez e persiste dali pra frente.
+      // a contagem de quantas parcelas já foram usadas só avança quando a parcela realmente teve impacto naquele corte
       let ocorrencias = 1;
-      // no mês da própria decisão, se a véspera do salário cai antes do dia da parcela, essa parcela ainda não tinha vencido naquele corte
       if(diferencaMeses === 0 && diaSimulado > diaAntes) ocorrencias = 0;
-      if(recorrenteSim && qtdSim && diferencaMeses >= qtdSim) ocorrencias = 0;
+      if(recorrenteSim && qtdSim && ocorrencias === 1){
+        if(parcelasUsadas >= qtdSim) ocorrencias = 0;
+        else parcelasUsadas++;
+      }
 
       const impacto = sinal * ocorrencias * valorCents;
       resultados.push({ano, mes, diaAntes, baseline, simulado: baseline+impacto});
+      // já mostrou todos os meses com parcela ativa e mais um mês depois (confirmando que acabou) — pode parar
+      if(recorrenteSim && qtdSim && parcelasUsadas >= qtdSim && ocorrencias === 0 && diferencaMeses > 0) break;
     }
     return resultados;
   }
@@ -1498,15 +1523,15 @@
     const resumo = document.getElementById('simResumo');
     const mesesQueApertam = folegoResultados.filter(r => r.simulado < 0);
     if(folegoResultados.length === 0){
-      resumo.className = 'ajuste-resultado';
+      resumo.className = 'sim-veredito';
       resumo.innerHTML = 'Ainda não consegui achar seu salário cadastrado pra calcular se isso cabe no orçamento.';
     }else if(mesesQueApertam.length === 0){
-      resumo.className = 'ajuste-resultado pos';
+      resumo.className = 'sim-veredito pos';
       resumo.innerHTML = '✅ <b>Sim, dá pra pagar</b> — seu saldo continua positivo em todos os meses até o salário, mesmo com essa decisão.';
     }else{
       const primeiro = mesesQueApertam[0];
       const nomeMes = MESES[primeiro.mes]+'/'+primeiro.ano;
-      resumo.className = 'ajuste-resultado neg';
+      resumo.className = 'sim-veredito neg';
       resumo.innerHTML = '⚠️ <b>Não, isso vai apertar</b> — em '+nomeMes+' seu saldo fica negativo (<span class="valor">'+fmt(Math.abs(primeiro.simulado))+'</span> no vermelho) por causa dessa decisão.';
     }
 
@@ -1518,8 +1543,14 @@
       document.getElementById('simFolegoLista').innerHTML = folegoResultados.map(r => {
         const corBase = r.simulado>=0 ? 'pos' : 'neg';
         const ficaNegativo = r.baseline>=0 && r.simulado<0;
-        return '<div class="folego-linha"><span class="mes-nome">'+MESES[r.mes]+'/'+r.ano+' <small style="opacity:.6;">(dia '+r.diaAntes+')</small></span>'+
-          '<b class="'+corBase+'">'+fmt(r.simulado)+(ficaNegativo?' ⚠':'')+'</b></div>';
+        return '<div class="folego-linha-v2">'+
+          '<div class="folego-mes-header">'+MESES[r.mes]+'/'+r.ano+' <small>(dia '+r.diaAntes+')</small></div>'+
+          '<div class="folego-comparativo">'+
+            '<div class="folego-col"><span class="folego-rotulo">Sem decisão</span><b class="folego-valor-neutro">'+fmt(r.baseline)+'</b></div>'+
+            '<span class="folego-seta">→</span>'+
+            '<div class="folego-col"><span class="folego-rotulo">Com decisão</span><b class="'+corBase+'">'+fmt(r.simulado)+(ficaNegativo?' ⚠':'')+'</b></div>'+
+          '</div>'+
+        '</div>';
       }).join('');
     }
 
