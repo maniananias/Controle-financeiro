@@ -369,9 +369,9 @@
       <div class="ajuste-resultado" id="ajusteResultado"></div>
     </div>
 
-    <div class="ajuste-box" id="folegoBox">
-      <p class="ajuste-titulo">Fôlego por mês (sobra ou falta prevista)</p>
-      <div id="folegoLista"></div>
+    <div class="ajuste-box" id="folegoBox" style="display:none;">
+      <p class="ajuste-titulo" id="folegoTitulo">Fôlego até o próximo recebimento</p>
+      <div class="ajuste-resultado" id="folegoResultado"></div>
     </div>
 
     <button class="btn-simular-destaque" id="btnAtalhoSimular">🔮 Testar uma decisão antes de gastar</button>
@@ -529,7 +529,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-10-aq</p>
+    <p class="versao-app">Versão do app: 2026-09-10-ar</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1071,20 +1071,66 @@
     }
   }
 
-  function renderFolego(){
+  function proximaEntradaRecorrente(dataAncoraISO){
+    const ancora = new Date(dataAncoraISO+'T00:00:00');
+    garantirRecorrencias(ancora.getFullYear(), ancora.getMonth());
+    const prox = new Date(ancora.getFullYear(), ancora.getMonth()+1, 1);
+    garantirRecorrencias(prox.getFullYear(), prox.getMonth());
+    const seguinte = new Date(ancora.getFullYear(), ancora.getMonth()+2, 1);
+    garantirRecorrencias(seguinte.getFullYear(), seguinte.getMonth());
+    const candidatas = state.movimentacoes.filter(m => m.tipo==='entrada' && m.data >= dataAncoraISO && (m.recorrente || m.origemRecorrenteId));
+    if(candidatas.length === 0) return null;
+    candidatas.sort((a,b)=>a.data.localeCompare(b.data));
+    const salario = candidatas.find(m=>m.categoria==='Salário');
+    return salario || candidatas[0];
+  }
+
+  function proximaEntradaRecorrente(){
     const hoje = new Date();
-    let html = '';
-    for(let i=0; i<6; i++){
-      const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
-      const ano = d.getFullYear(), mes = d.getMonth();
-      const t = totaisDoMes(ano, mes);
-      const ehAtual = (i===0);
-      const cor = t.economia >= 0 ? 'pos' : 'neg';
-      const rotulo = t.economia >= 0 ? 'Sobra' : 'Falta';
-      html += '<div class="folego-linha"><span class="mes-nome'+(ehAtual?' atual':'')+'">'+MESES[mes]+'/'+ano+(ehAtual?' (atual)':'')+'</span>'+
-        '<b class="'+cor+'">'+rotulo+' '+fmt(Math.abs(t.economia))+'</b></div>';
+    garantirRecorrencias(hoje.getFullYear(), hoje.getMonth());
+    const prox = new Date(hoje.getFullYear(), hoje.getMonth()+1, 1);
+    garantirRecorrencias(prox.getFullYear(), prox.getMonth());
+    const hojeISO = todayISO();
+    const candidatas = state.movimentacoes.filter(m => m.tipo==='entrada' && m.data >= hojeISO && (m.recorrente || m.origemRecorrenteId));
+    if(candidatas.length === 0) return null;
+    candidatas.sort((a,b)=>a.data.localeCompare(b.data));
+    const salario = candidatas.find(m=>m.categoria==='Salário');
+    return salario || candidatas[0];
+  }
+
+  function renderFolego(){
+    const box = document.getElementById('folegoBox');
+    const prox = proximaEntradaRecorrente();
+    if(!prox){ box.style.display = 'none'; return; }
+    box.style.display = 'block';
+
+    const saldoHoje = saldoAteHoje();
+    const hoje = new Date();
+    const inicio = new Date(hoje); inicio.setDate(inicio.getDate()+1);
+    const fim = new Date(prox.data+'T00:00:00');
+    let saidasPeriodo = 0, entradasPeriodo = 0;
+    if(inicio <= fim){
+      let d = new Date(inicio);
+      while(d <= fim){
+        const iso = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+        const t = totaisDoDia(iso);
+        saidasPeriodo += t.saidas + t.diario;
+        entradasPeriodo += t.entradas;
+        d.setDate(d.getDate()+1);
+      }
     }
-    document.getElementById('folegoLista').innerHTML = html;
+    const resultado = saldoHoje + entradasPeriodo - saidasPeriodo;
+    const dataFormatada = formatBR(prox.data);
+
+    document.getElementById('folegoTitulo').textContent = 'Fôlego até ' + dataFormatada + ' (' + (prox.descricao || prox.categoria) + ')';
+    const el = document.getElementById('folegoResultado');
+    if(resultado >= 0){
+      el.className = 'ajuste-resultado pos';
+      el.innerHTML = 'Sobra <span class="valor">'+fmt(resultado)+'</span> até lá — os gastos previstos até essa data já estão cobertos pelo seu saldo de hoje.';
+    }else{
+      el.className = 'ajuste-resultado neg';
+      el.innerHTML = 'Falta <span class="valor">'+fmt(Math.abs(resultado))+'</span> até lá — é o quanto você precisaria ter a mais hoje (ou deixar de gastar) pra não apertar antes de '+dataFormatada+'.';
+    }
   }
 
   function renderAjusteFinanceiro(){
