@@ -221,18 +221,20 @@
   .extrato-quiet-info b.pos{color:#22E3B2;}
   .extrato-quiet-info b.neg{color:#FF6B85;}
   .extrato-tabela-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,.08);}
-  .extrato-tabela{width:100%;border-collapse:collapse;font-size:11.5px;white-space:nowrap;}
-  .extrato-tabela thead th{position:sticky;top:0;background:var(--surface);color:var(--ink-soft);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:8px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,.1);}
+  .extrato-tabela{width:100%;border-collapse:collapse;font-size:10.5px;table-layout:fixed;}
+  .extrato-tabela thead th{position:sticky;top:0;background:var(--surface);color:var(--ink-soft);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.01em;padding:7px 3px;text-align:right;border-bottom:1px solid rgba(255,255,255,.1);}
   .extrato-tabela thead th:first-child{text-align:left;}
-  .extrato-tabela td{padding:6px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);}
+  .extrato-tabela td{padding:5px 3px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .extrato-tabela tbody tr:nth-child(even){background:rgba(255,255,255,.02);}
+  .extrato-col-dia{width:15%;}
+  .extrato-col-num{width:21.25%;}
   .extrato-col-dia{text-align:left !important;font-weight:700;color:var(--ink-soft);}
-  .extrato-col-dia small{display:inline-block;margin-left:5px;font-weight:500;opacity:.6;text-transform:lowercase;}
+  .extrato-col-dia small{display:inline-block;margin-left:2px;font-weight:500;opacity:.6;text-transform:lowercase;font-size:8.5px;}
   .extrato-entrada{color:#22E3B2;}
   .extrato-saida{color:#93A2B8;}
   .extrato-diario{color:#93A2B8;cursor:pointer;transition:background .15s;}
   .extrato-diario:hover{background:rgba(124,140,255,.14);}
-  .extrato-zerar{font-size:10px;opacity:.45;font-style:italic;}
+  .extrato-zerar{font-size:9.5px;opacity:.45;font-style:italic;}
   .extrato-saldo{font-weight:800;background:rgba(255,193,90,.10);color:#FFC15A;}
   .extrato-saldo.neg{background:rgba(255,107,133,.16);color:#FF6B85;}
   tr.extrato-linha-hoje td{box-shadow:inset 0 0 0 1px rgba(124,140,255,.5);}
@@ -590,7 +592,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-bj</p>
+    <p class="versao-app">Versão do app: 2026-09-11-bk</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -803,6 +805,7 @@
   function todayISO(){ const d=new Date(); return isoDate(d.getFullYear(), d.getMonth(), d.getDate()); }
   function formatBR(iso){ const [y,m,d]=iso.split('-'); return d+'/'+m+'/'+y; }
   function fmt(cents){ return ((cents||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+  function fmtNum(cents){ return ((cents||0)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
   function daysInMonth(ano,mesIdx0){ return new Date(ano,mesIdx0+1,0).getDate(); }
 
@@ -1934,18 +1937,18 @@
       const saldoNeg = d.saldo < 0;
       return '<tr class="'+classesExtra.join(' ')+'">'+
         '<td class="extrato-col-dia">'+String(d.dia).padStart(2,'0')+'/'+String(d.mes+1).padStart(2,'0')+'<small>'+diaSemana+'</small></td>'+
-        '<td class="extrato-col-num extrato-entrada">'+(d.entradas>0 ? fmt(d.entradas) : '')+'</td>'+
-        '<td class="extrato-col-num extrato-saida">'+(d.saidas>0 ? fmt(d.saidas) : '')+'</td>'+
-        '<td class="extrato-col-num extrato-diario" data-iso="'+d.iso+'">'+(d.diario>0 ? fmt(d.diario) : '<span class="extrato-zerar">definir</span>')+'</td>'+
-        '<td class="extrato-col-num extrato-saldo'+(saldoNeg?' neg':'')+'">'+fmt(d.saldo)+'</td>'+
+        '<td class="extrato-col-num extrato-entrada">'+(d.entradas>0 ? fmtNum(d.entradas) : '')+'</td>'+
+        '<td class="extrato-col-num extrato-saida">'+(d.saidas>0 ? fmtNum(d.saidas) : '')+'</td>'+
+        '<td class="extrato-col-num extrato-diario" data-iso="'+d.iso+'">'+(d.diario>0 ? fmtNum(d.diario) : '<span class="extrato-zerar">def.</span>')+'</td>'+
+        '<td class="extrato-col-num extrato-saldo'+(saldoNeg?' neg':'')+'">'+fmtNum(d.saldo)+'</td>'+
       '</tr>';
     }).join('');
 
     const html = '<div class="extrato-tabela-wrap"><table class="extrato-tabela">'+
-      '<thead><tr><th></th><th>Entrada</th><th>Saída</th><th>Diário</th><th>Saldo</th></tr></thead>'+
+      '<thead><tr><th></th><th>Entr.</th><th>Saída</th><th>Diário</th><th>Saldo</th></tr></thead>'+
       '<tbody>'+linhas+'</tbody>'+
     '</table></div>'+
-    (diasFolego.size > 0 ? '<p class="extrato-legenda"><span class="extrato-legenda-dot folego"></span> véspera do salário (Fôlego) &nbsp; <span class="extrato-legenda-dot neg"></span> saldo negativo</p>' : '<p class="extrato-legenda"><span class="extrato-legenda-dot neg"></span> saldo negativo</p>');
+    '<p class="extrato-legenda">valores em R$ &nbsp;·&nbsp; '+(diasFolego.size > 0 ? '<span class="extrato-legenda-dot folego"></span> véspera do salário &nbsp; ' : '')+'<span class="extrato-legenda-dot neg"></span> saldo negativo</p>';
 
     document.getElementById('tabelaExtrato').innerHTML = html;
     document.querySelectorAll('#tabelaExtrato .extrato-diario[data-iso]').forEach(td => td.addEventListener('click', () => abrirEditorDiarioDia(td.dataset.iso)));
