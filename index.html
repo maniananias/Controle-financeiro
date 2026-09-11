@@ -43,19 +43,22 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
-  html{overflow-x:hidden;}
+  html{overflow-x:hidden;background:var(--bg);}
   body.modal-aberto{position:fixed;left:0;right:0;overflow:hidden;width:100%;}
   body{
     overflow-x:hidden;
-    background:
-      radial-gradient(560px 420px at 12% -6%, rgba(34,227,178,.16), transparent 60%),
-      radial-gradient(620px 480px at 100% 18%, rgba(108,124,255,.14), transparent 55%),
-      var(--bg);
-    background-attachment:fixed;
+    position:relative;
+    background:var(--bg);
     color:var(--ink);
     font-family:'Inter',sans-serif;
     -webkit-font-smoothing:antialiased;
     padding-bottom:62px;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(560px 420px at 12% -6%, rgba(34,227,178,.16), transparent 60%),
+      radial-gradient(620px 480px at 100% 18%, rgba(108,124,255,.14), transparent 55%);
   }
   h1,h2,h3{font-family:'Space Grotesk',sans-serif;margin:0;letter-spacing:-.2px;}
   .mono{font-family:'JetBrains Mono',monospace;}
@@ -606,7 +609,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-bu</p>
+    <p class="versao-app">Versão do app: 2026-09-11-bv</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
