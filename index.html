@@ -76,10 +76,15 @@
   /* ---- topo comum ---- */
   .topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px;}
   .topbar h1{font-size:21px;letter-spacing:-.3px;}
-  .periodo{display:flex;gap:5px;flex-wrap:wrap;width:100%;justify-content:flex-start;}
+  .periodo{display:flex;gap:6px;flex-wrap:wrap;width:100%;align-items:center;}
   .periodo select{
-    font-family:'Inter',sans-serif;font-size:16px;font-weight:600;color:var(--ink);
-    background-color:var(--surface);border:1px solid var(--line);border-radius:9px;padding:4px 20px 4px 7px;
+    font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:var(--ink);
+    background-color:var(--surface);border:1px solid var(--line);border-radius:9px;
+    -webkit-appearance:none;-moz-appearance:none;appearance:none;
+    min-width:50px;text-align:center;
+    padding:6px 22px 6px 10px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2393A2B8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 8px center;background-size:9px 6px;
   }
   .btn-hoje{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--primary);background:var(--primary-soft);border:1px solid var(--primary);border-radius:9px;padding:5px 9px;cursor:pointer;}
   .btn-fechar-tela{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink-soft);background:var(--surface-alt);border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer;flex:none;}
@@ -385,10 +390,10 @@
     <div class="topbar">
       <h1>Visão geral</h1>
       <div class="periodo">
+        <button id="btnHoje" class="btn-hoje" type="button" title="Voltar para hoje">Hoje</button>
         <select id="dashDia"></select>
         <select id="dashMes"></select>
         <select id="dashAno"></select>
-        <button id="btnHoje" class="btn-hoje" type="button" title="Voltar para hoje">Hoje</button>
       </div>
     </div>
 
@@ -592,7 +597,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-bn</p>
+    <p class="versao-app">Versão do app: 2026-09-11-bo</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
