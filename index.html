@@ -522,7 +522,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-09-al</p>
+    <p class="versao-app">Versão do app: 2026-09-09-am</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1046,13 +1046,14 @@
     }
   }
 
-  function proximaEntradaRecorrente(){
-    const hoje = new Date();
-    garantirRecorrencias(hoje.getFullYear(), hoje.getMonth());
-    const prox = new Date(hoje.getFullYear(), hoje.getMonth()+1, 1);
+  function proximaEntradaRecorrente(dataAncoraISO){
+    const ancora = new Date(dataAncoraISO+'T00:00:00');
+    garantirRecorrencias(ancora.getFullYear(), ancora.getMonth());
+    const prox = new Date(ancora.getFullYear(), ancora.getMonth()+1, 1);
     garantirRecorrencias(prox.getFullYear(), prox.getMonth());
-    const hojeISO = todayISO();
-    const candidatas = state.movimentacoes.filter(m => m.tipo==='entrada' && m.data >= hojeISO && (m.recorrente || m.origemRecorrenteId));
+    const seguinte = new Date(ancora.getFullYear(), ancora.getMonth()+2, 1);
+    garantirRecorrencias(seguinte.getFullYear(), seguinte.getMonth());
+    const candidatas = state.movimentacoes.filter(m => m.tipo==='entrada' && m.data >= dataAncoraISO && (m.recorrente || m.origemRecorrenteId));
     if(candidatas.length === 0) return null;
     candidatas.sort((a,b)=>a.data.localeCompare(b.data));
     const salario = candidatas.find(m=>m.categoria==='Salário');
@@ -1061,12 +1062,19 @@
 
   function renderFolego(){
     const box = document.getElementById('folegoBox');
-    const prox = proximaEntradaRecorrente();
+    const hojeReal = new Date();
+    const ehMesAtualReal = (filtro.ano === hojeReal.getFullYear() && filtro.mes === hojeReal.getMonth());
+
+    // se estiver vendo o mês atual de verdade, a âncora é hoje; se estiver navegando por outro mês, a âncora é o início daquele mês
+    const dataAncoraISO = ehMesAtualReal ? todayISO() : isoDate(filtro.ano, filtro.mes, 1);
+    const saldoAncora = ehMesAtualReal ? saldoAteHoje() : saldoInicialDoMes(filtro.ano, filtro.mes);
+
+    const prox = proximaEntradaRecorrente(dataAncoraISO);
     if(!prox){ box.style.display = 'none'; return; }
     box.style.display = 'block';
 
-    const hoje = new Date();
-    const inicio = new Date(hoje); inicio.setDate(inicio.getDate()+1);
+    const ancora = new Date(dataAncoraISO+'T00:00:00');
+    const inicio = new Date(ancora); if(ehMesAtualReal) inicio.setDate(inicio.getDate()+1);
     const fim = new Date(prox.data+'T00:00:00');
     let saidasPeriodo = 0, entradasPeriodo = 0;
     if(inicio <= fim){
@@ -1079,18 +1087,18 @@
         d.setDate(d.getDate()+1);
       }
     }
-    const saldoHoje = saldoAteHoje();
-    const resultado = saldoHoje + entradasPeriodo - saidasPeriodo;
+    const resultado = saldoAncora + entradasPeriodo - saidasPeriodo;
     const dataFormatada = formatBR(prox.data);
+    const referencia = ehMesAtualReal ? 'seu saldo de hoje' : ('o saldo previsto pro início de ' + MESES[filtro.mes].toLowerCase());
 
-    document.getElementById('folegoTitulo').textContent = 'Fôlego até ' + dataFormatada + ' (' + (prox.descricao || prox.categoria) + ')';
+    document.getElementById('folegoTitulo').textContent = (ehMesAtualReal ? 'Fôlego até ' : 'Fôlego de '+MESES[filtro.mes]+' até ') + dataFormatada + ' (' + (prox.descricao || prox.categoria) + ')';
     const el = document.getElementById('folegoResultado');
     if(resultado >= 0){
       el.className = 'ajuste-resultado pos';
-      el.innerHTML = 'Sobra <span class="valor">'+fmt(resultado)+'</span> até lá — os gastos previstos até essa data já estão cobertos pelo seu saldo de hoje.';
+      el.innerHTML = 'Sobra <span class="valor">'+fmt(resultado)+'</span> até lá — os gastos previstos até essa data já estão cobertos por '+referencia+'.';
     }else{
       el.className = 'ajuste-resultado neg';
-      el.innerHTML = 'Falta <span class="valor">'+fmt(Math.abs(resultado))+'</span> até lá — é o quanto você precisaria ter a mais hoje (ou deixar de gastar) pra não apertar antes de '+dataFormatada+'.';
+      el.innerHTML = 'Falta <span class="valor">'+fmt(Math.abs(resultado))+'</span> até lá, considerando '+referencia+'.';
     }
   }
 
