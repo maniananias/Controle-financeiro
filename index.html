@@ -235,8 +235,8 @@
   .extrato-col-num{width:20%;}
   .extrato-col-dia{text-align:center;font-weight:700;color:var(--ink-soft);}
   .extrato-col-dia small{display:block;margin-top:2px;font-weight:500;opacity:.55;text-transform:lowercase;font-size:8.5px;}
-  .extrato-entrada{background:rgba(34,227,178,.10);color:#22E3B2;font-weight:700;border-radius:6px;}
-  .extrato-saida{background:rgba(255,107,133,.11);color:#FF6B85;font-weight:700;border-radius:6px;}
+  .extrato-entrada{background:rgba(34,227,178,.10);color:#22E3B2;font-weight:700;border-radius:6px;cursor:pointer;}
+  .extrato-saida{background:rgba(255,107,133,.11);color:#FF6B85;font-weight:700;border-radius:6px;cursor:pointer;}
   .extrato-diario{color:#8C9BFF;cursor:pointer;transition:background .15s;border-radius:6px;}
   .extrato-diario-com-valor{background:rgba(140,155,255,.11);font-weight:700;}
   .extrato-diario:hover{background:rgba(140,155,255,.20);}
@@ -300,6 +300,10 @@
   }
   .field input[type=date]{-webkit-appearance:none;appearance:none;}
   .field select{padding-right:30px;}
+  .valor-soma-row{display:flex;gap:6px;align-items:stretch;}
+  .valor-soma-row input{flex:1;min-width:0;}
+  .btn-somar{flex:0 0 auto;width:42px;border-radius:10px;border:1px solid var(--line);background:var(--surface-alt);color:var(--primary);font-size:18px;font-weight:700;cursor:pointer;line-height:1;}
+  .btn-somar:active{background:var(--primary-soft);}
   .switch-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;}
   .switch{position:relative;width:42px;height:24px;flex:0 0 auto;}
   .switch input{opacity:0;width:0;height:0;}
@@ -602,7 +606,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-bs</p>
+    <p class="versao-app">Versão do app: 2026-09-11-bu</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -652,7 +656,12 @@
         <button type="button" id="btnTipoDiario">🔁 Diário</button>
       </div>
       <div class="field"><label>Data</label><input type="date" id="movData"></div>
-      <div class="field"><label>Valor</label><input id="movValor" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Valor</label>
+        <div class="valor-soma-row">
+          <input id="movValor" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="movValor" title="Somar outro valor (ex: 20 + 10)">+</button>
+        </div>
+      </div>
       <div class="field"><label>Categoria</label><select id="movCategoria"></select></div>
       <div class="field"><label>Descrição (opcional)</label><input type="text" id="movDescricao" placeholder="Ex: almoço com a equipe"></div>
       <div class="field"><label>Forma de pagamento</label><select id="movForma"></select></div>
@@ -687,12 +696,27 @@
       <button class="modal-close" data-close-modal type="button">✕</button>
       <h2 class="modal-title" id="diaDiarioTitulo">Diário do dia</h2>
       <input type="hidden" id="diaDiarioIso">
-      <div class="field"><label>Gasto diário nesse dia</label><input id="diaDiarioValor" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Gasto diário nesse dia</label>
+        <div class="valor-soma-row">
+          <input id="diaDiarioValor" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="diaDiarioValor" title="Somar outro valor (ex: 20 + 10)">+</button>
+        </div>
+      </div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Isso muda só esse dia — os outros continuam com o valor padrão.</p>
       <div class="modal-acoes">
         <button class="btn-secundario" id="btnDiaDiarioRemover" style="display:none;">Voltar ao padrão</button>
         <button class="btn-primario" id="btnDiaDiarioSalvar">Salvar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL DETALHE DO DIA (ver o que compõe o total de Entrada/Saída do dia) ===== -->
+  <div class="modal-overlay" id="modalDetalheDia">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <button class="modal-close" data-close-modal type="button">✕</button>
+      <h2 class="modal-title" id="detalheDiaTitulo">Lançamentos do dia</h2>
+      <div id="detalheDiaLista"></div>
     </div>
   </div>
 
@@ -1074,11 +1098,44 @@
   }
 
   // ================= máscara de moeda =================
-  function centsFromInput(el){ const d = el.value.replace(/\D/g,''); return d ? parseInt(d) : 0; }
+  // aceita expressões simples tipo "20+10-5" (soma/subtrai na hora de ler o valor),
+  // sem atrapalhar o jeito normal de digitar (só um valor)
+  function centsFromInput(el){
+    const raw = el.value;
+    if(/[+-]/.test(raw)){
+      const termos = raw.match(/[+-]?\d+/g);
+      if(!termos) return 0;
+      return termos.reduce((soma,t) => soma + parseInt(t,10), 0);
+    }
+    const d = raw.replace(/\D/g,'');
+    return d ? parseInt(d) : 0;
+  }
   function bindMoney(el, onChange){
-    el.addEventListener('input', () => { const c = centsFromInput(el); el.value = c ? fmt(c) : ''; if(onChange) onChange(c); });
+    el.addEventListener('input', () => {
+      if(/[+-]/.test(el.value)){
+        // modo "conta": deixa o usuário terminar de digitar a expressão antes de somar
+        el.value = el.value.replace(/[^\d+\-]/g, '');
+        if(onChange) onChange(centsFromInput(el));
+        return;
+      }
+      const c = centsFromInput(el); el.value = c ? fmt(c) : ''; if(onChange) onChange(c);
+    });
+    el.addEventListener('blur', () => {
+      if(/[+-]/.test(el.value)){
+        const c = centsFromInput(el);
+        el.value = c ? fmt(c) : '';
+        if(onChange) onChange(c);
+      }
+    });
   }
   function setMoneyValue(el, cents){ el.value = cents ? fmt(cents) : ''; }
+  document.querySelectorAll('.btn-somar').forEach(btn => btn.addEventListener('click', () => {
+    const el = document.getElementById(btn.dataset.somar);
+    if(!el) return;
+    const atual = centsFromInput(el);
+    el.value = (atual > 0 ? String(atual) : '') + '+';
+    el.focus();
+  }));
 
   // ---- fechar modais (X ou toque fora, exceto o gráfico expandido — esse só fecha pelo X) ----
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -1960,8 +2017,8 @@
       const saldoNeg = d.saldo < 0;
       return '<tr class="'+classesExtra.join(' ')+'">'+
         '<td class="extrato-col-dia">'+String(d.dia).padStart(2,'0')+'/'+String(d.mes+1).padStart(2,'0')+'/'+String(d.ano).slice(-2)+'<small>'+diaSemana+'</small></td>'+
-        '<td class="extrato-col-num'+(d.entradas>0 ? ' extrato-entrada' : '')+'">'+(d.entradas>0 ? fmtNum(d.entradas) : '')+'</td>'+
-        '<td class="extrato-col-num'+(d.saidas>0 ? ' extrato-saida' : '')+'">'+(d.saidas>0 ? fmtNum(d.saidas) : '')+'</td>'+
+        '<td class="extrato-col-num'+(d.entradas>0 ? ' extrato-entrada' : '')+'" data-iso="'+d.iso+'" data-tipo="entrada">'+(d.entradas>0 ? fmtNum(d.entradas) : '')+'</td>'+
+        '<td class="extrato-col-num'+(d.saidas>0 ? ' extrato-saida' : '')+'" data-iso="'+d.iso+'" data-tipo="saida">'+(d.saidas>0 ? fmtNum(d.saidas) : '')+'</td>'+
         '<td class="extrato-col-num extrato-diario'+(d.diario>0 ? ' extrato-diario-com-valor' : '')+'" data-iso="'+d.iso+'">'+(d.diario>0 ? fmtNum(d.diario) : '<span class="extrato-zerar">def.</span>')+'</td>'+
         '<td class="extrato-col-num extrato-saldo'+(saldoNeg?' neg':'')+'">'+fmtNum(d.saldo)+'</td>'+
       '</tr>';
@@ -1975,6 +2032,24 @@
 
     document.getElementById('tabelaExtrato').innerHTML = html;
     document.querySelectorAll('#tabelaExtrato .extrato-diario[data-iso]').forEach(td => td.addEventListener('click', () => abrirEditorDiarioDia(td.dataset.iso)));
+    document.querySelectorAll('#tabelaExtrato .extrato-entrada[data-iso], #tabelaExtrato .extrato-saida[data-iso]').forEach(td => td.addEventListener('click', () => abrirDetalheDia(td.dataset.iso, td.dataset.tipo)));
+  }
+
+  function abrirDetalheDia(iso, tipo){
+    const movs = movimentacoesDoDia(iso).filter(m => m.tipo === tipo).sort((a,b) => (a.criadoEm||'').localeCompare(b.criadoEm||''));
+    const [y,mNum,d] = iso.split('-').map(Number);
+    document.getElementById('detalheDiaTitulo').textContent = (tipo==='entrada'?'Entradas de ':'Saídas de ') + String(d).padStart(2,'0')+'/'+String(mNum).padStart(2,'0')+'/'+y;
+    document.getElementById('detalheDiaLista').innerHTML = movs.map(m => (
+      '<div class="extrato-item" data-id="'+m.id+'">'+
+        '<span class="extrato-item-cat">'+(CAT_ICONES[m.categoria]||'')+' '+m.categoria+(m.descricao?' — '+m.descricao:'')+'</span>'+
+        '<span class="extrato-item-valor '+m.tipo+'">'+(m.tipo==='entrada'?'+':'−')+' '+fmt(m.valor)+'</span>'+
+      '</div>'
+    )).join('');
+    document.querySelectorAll('#detalheDiaLista .extrato-item[data-id]').forEach(el => el.addEventListener('click', () => {
+      document.getElementById('modalDetalheDia').classList.remove('show');
+      abrirModalMov(el.dataset.id);
+    }));
+    document.getElementById('modalDetalheDia').classList.add('show');
   }
 
   bindMoney(document.getElementById('diaDiarioValor'));
