@@ -534,7 +534,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-az</p>
+    <p class="versao-app">Versão do app: 2026-09-11-bc</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -812,11 +812,11 @@
   async function salvarOverrides(){ try{ await storage.set('fin-diario-overrides', JSON.stringify(state.diarioOverrides), false); }catch(e){} }
   async function salvarMetas(){ try{ await storage.set('fin-metas', JSON.stringify(state.metas), false); }catch(e){ mostrarToast('Não consegui salvar agora, tenta de novo'); } }
 
-  function mostrarToast(msg){
+  function mostrarToast(msg, duracao){
     const t = document.getElementById('toast');
     t.textContent = msg; t.classList.add('show');
     clearTimeout(mostrarToast._t);
-    mostrarToast._t = setTimeout(()=>t.classList.remove('show'), 1500);
+    mostrarToast._t = setTimeout(()=>t.classList.remove('show'), duracao || 1500);
   }
 
   // ================= cálculo =================
@@ -1309,25 +1309,22 @@
     const resultados = calcularImpactoSimulado(data, simTipo, valor, recorrente, qtd);
     ultimaSimulacao = { data, tipo:simTipo, valor, categoria, recorrente, qtd };
 
-    // se a decisão tem um fim definido (ex: parcelado em 5x), o resumo foca no mês da última parcela,
-    // não sempre em 12 meses à frente (senão vira um mês bem depois de a decisão já ter acabado)
-    let indiceResumo = resultados.length - 1;
-    if(recorrente && qtd){
-      const hoje = new Date();
-      const [ay,am] = data.split('-').map(Number);
-      const mesesDesdeHoje = (ay - hoje.getFullYear())*12 + ((am-1) - hoje.getMonth());
-      indiceResumo = Math.max(0, Math.min(mesesDesdeHoje + qtd - 1, resultados.length-1));
-    }
-    const ultimo = resultados[indiceResumo];
-    const diferenca = ultimo.simulado - ultimo.baseline;
-    const nomeUltimoMes = MESES[ultimo.mes] + '/' + ultimo.ano;
-    const resumo = document.getElementById('simResumo');
-    resumo.className = 'ajuste-resultado ' + (diferenca >= 0 ? 'pos' : 'neg');
-    resumo.innerHTML = 'Em ' + nomeUltimoMes + ', seu saldo projetado seria <span class="valor">' + fmt(ultimo.simulado) + '</span>' +
-      ' em vez de <span class="valor">' + fmt(ultimo.baseline) + '</span> — uma diferença de <span class="valor">' +
-      (diferenca>=0?'+':'') + fmt(diferenca) + '</span> por causa dessa decisão.';
-
     const folegoResultados = calcularFolegoComSimulacao(data, simTipo, valor, recorrente, qtd);
+    const resumo = document.getElementById('simResumo');
+    const mesesQueApertam = folegoResultados.filter(r => r.simulado < 0);
+    if(folegoResultados.length === 0){
+      resumo.className = 'ajuste-resultado';
+      resumo.innerHTML = 'Ainda não consegui achar seu salário cadastrado pra calcular se isso cabe no orçamento.';
+    }else if(mesesQueApertam.length === 0){
+      resumo.className = 'ajuste-resultado pos';
+      resumo.innerHTML = '✅ <b>Sim, dá pra pagar</b> — seu saldo continua positivo em todos os meses até o salário, mesmo com essa decisão.';
+    }else{
+      const primeiro = mesesQueApertam[0];
+      const nomeMes = MESES[primeiro.mes]+'/'+primeiro.ano;
+      resumo.className = 'ajuste-resultado neg';
+      resumo.innerHTML = '⚠️ <b>Não, isso vai apertar</b> — em '+nomeMes+' seu saldo fica negativo (<span class="valor">'+fmt(Math.abs(primeiro.simulado))+'</span> no vermelho) por causa dessa decisão.';
+    }
+
     const folegoBox = document.getElementById('simFolegoBox');
     if(folegoResultados.length === 0){
       folegoBox.style.display = 'none';
@@ -2069,12 +2066,14 @@
   });
   document.getElementById('inputImportarBackup').addEventListener('change', (e) => {
     const arquivo = e.target.files[0];
-    if(!arquivo) return;
+    if(!arquivo){ mostrarToast('Nenhum arquivo foi selecionado', 4000); return; }
+    mostrarToast('Lendo "'+arquivo.name+'"...', 4000);
     const leitor = new FileReader();
+    leitor.onerror = () => { mostrarToast('Erro ao ler o arquivo: ' + (leitor.error ? leitor.error.message : 'desconhecido'), 6000); };
     leitor.onload = async () => {
       try{
         const backup = JSON.parse(leitor.result);
-        if(!backup.config || !Array.isArray(backup.movimentacoes)) throw new Error('formato inválido');
+        if(!backup.config || !Array.isArray(backup.movimentacoes)) throw new Error('o arquivo não tem o formato esperado (faltam campos config/movimentacoes)');
         if(!confirm('Isso vai substituir os dados atuais pelos do backup. Continuar?')) return;
         state.config = backup.config;
         state.movimentacoes = backup.movimentacoes;
@@ -2082,10 +2081,10 @@
         state.metas = backup.metas || [];
         limparCache();
         await salvarConfig(); await salvarMovimentacoes(); await salvarOverrides(); await salvarMetas();
-        mostrarToast('Backup importado');
+        mostrarToast('Backup importado com sucesso!', 3000);
         renderTelaAtual();
       }catch(err){
-        mostrarToast('Esse arquivo não é um backup válido');
+        mostrarToast('Erro ao importar: ' + err.message, 6000);
       }
       e.target.value = '';
     };
