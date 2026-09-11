@@ -74,12 +74,12 @@
   #screen-dashboard{ padding-top:calc(22px + env(safe-area-inset-top)); }
 
   /* ---- topo comum ---- */
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px;}
   .topbar h1{font-size:21px;letter-spacing:-.3px;}
-  .periodo{display:flex;gap:6px;}
+  .periodo{display:flex;gap:5px;flex-wrap:wrap;width:100%;justify-content:flex-end;}
   .periodo select{
     font-family:'Inter',sans-serif;font-size:16px;font-weight:600;color:var(--ink);
-    background-color:var(--surface);border:1px solid var(--line);border-radius:9px;padding:4px 22px 4px 8px;
+    background-color:var(--surface);border:1px solid var(--line);border-radius:9px;padding:4px 20px 4px 7px;
   }
   .btn-hoje{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--primary);background:var(--primary-soft);border:1px solid var(--primary);border-radius:9px;padding:5px 9px;cursor:pointer;}
 
@@ -331,6 +331,7 @@
     <div class="topbar">
       <h1>Visão geral</h1>
       <div class="periodo">
+        <select id="dashDia"></select>
         <select id="dashMes"></select>
         <select id="dashAno"></select>
         <button id="btnHoje" class="btn-hoje" type="button" title="Voltar para hoje">Hoje</button>
@@ -365,6 +366,7 @@
     <div class="ajuste-box" id="folegoBox" style="display:none;">
       <p class="ajuste-titulo" id="folegoTitulo">Fôlego até o próximo recebimento</p>
       <div class="ajuste-resultado" id="folegoResultado"></div>
+      <p class="chart-hint" style="margin-top:8px;">Olha só até essa data — contas que vencem depois dela (mesmo dentro do mesmo mês) não entram nessa conta.</p>
     </div>
 
     <button class="btn-simular-destaque" id="btnAtalhoSimular">🔮 Testar uma decisão antes de gastar</button>
@@ -522,7 +524,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-09-am</p>
+    <p class="versao-app">Versão do app: 2026-09-09-ao</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -716,7 +718,7 @@
     diarioOverrides: {},
     metas: []
   };
-  let filtro = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
+  let filtro = { ano: new Date().getFullYear(), mes: new Date().getMonth(), dia: new Date().getDate() };
   let saldoCache = {};
   function limparCache(){ saldoCache = {}; }
 
@@ -871,6 +873,11 @@
     const hoje = new Date();
     const dias = saldosDiariosDoMes(hoje.getFullYear(), hoje.getMonth());
     return dias[hoje.getDate()-1].saldo;
+  }
+  function saldoAteODia(ano,mes,dia){
+    const dias = saldosDiariosDoMes(ano,mes);
+    const idx = Math.min(Math.max(dia,1), dias.length) - 1;
+    return dias[idx].saldo;
   }
 
   function garantirRecorrencias(ano,mes){
@@ -1062,19 +1069,18 @@
 
   function renderFolego(){
     const box = document.getElementById('folegoBox');
-    const hojeReal = new Date();
-    const ehMesAtualReal = (filtro.ano === hojeReal.getFullYear() && filtro.mes === hojeReal.getMonth());
-
-    // se estiver vendo o mês atual de verdade, a âncora é hoje; se estiver navegando por outro mês, a âncora é o início daquele mês
-    const dataAncoraISO = ehMesAtualReal ? todayISO() : isoDate(filtro.ano, filtro.mes, 1);
-    const saldoAncora = ehMesAtualReal ? saldoAteHoje() : saldoInicialDoMes(filtro.ano, filtro.mes);
+    const dataAncoraISO = isoDate(filtro.ano, filtro.mes, filtro.dia);
+    const saldoAncora = saldoAteODia(filtro.ano, filtro.mes, filtro.dia);
 
     const prox = proximaEntradaRecorrente(dataAncoraISO);
     if(!prox){ box.style.display = 'none'; return; }
     box.style.display = 'block';
 
+    const hojeReal = new Date();
+    const ehHojeDeVerdade = dataAncoraISO === todayISO();
+
     const ancora = new Date(dataAncoraISO+'T00:00:00');
-    const inicio = new Date(ancora); if(ehMesAtualReal) inicio.setDate(inicio.getDate()+1);
+    const inicio = new Date(ancora); inicio.setDate(inicio.getDate()+1);
     const fim = new Date(prox.data+'T00:00:00');
     let saidasPeriodo = 0, entradasPeriodo = 0;
     if(inicio <= fim){
@@ -1089,9 +1095,9 @@
     }
     const resultado = saldoAncora + entradasPeriodo - saidasPeriodo;
     const dataFormatada = formatBR(prox.data);
-    const referencia = ehMesAtualReal ? 'seu saldo de hoje' : ('o saldo previsto pro início de ' + MESES[filtro.mes].toLowerCase());
+    const referencia = ehHojeDeVerdade ? 'seu saldo de hoje' : ('o saldo previsto pra ' + formatBR(dataAncoraISO));
 
-    document.getElementById('folegoTitulo').textContent = (ehMesAtualReal ? 'Fôlego até ' : 'Fôlego de '+MESES[filtro.mes]+' até ') + dataFormatada + ' (' + (prox.descricao || prox.categoria) + ')';
+    document.getElementById('folegoTitulo').textContent = (ehHojeDeVerdade ? 'Fôlego até ' : 'Fôlego de '+formatBR(dataAncoraISO)+' até ') + dataFormatada + ' (' + (prox.descricao || prox.categoria) + ')';
     const el = document.getElementById('folegoResultado');
     if(resultado >= 0){
       el.className = 'ajuste-resultado pos';
@@ -1320,9 +1326,17 @@
 
   function renderDashboard(){
     garantirRecorrencias(filtro.ano, filtro.mes);
-    const dashMes = document.getElementById('dashMes'), dashAno = document.getElementById('dashAno');
+    const dashDia = document.getElementById('dashDia'), dashMes = document.getElementById('dashMes'), dashAno = document.getElementById('dashAno');
     if(!dashMes.dataset.ready){ popularSelectMeses(dashMes); dashMes.dataset.ready='1'; }
     if(!dashAno.dataset.ready){ popularSelectAnos(dashAno, filtro.ano); dashAno.dataset.ready='1'; }
+    const nDias = daysInMonth(filtro.ano, filtro.mes);
+    if(filtro.dia > nDias) filtro.dia = nDias;
+    const diasEsperados = dashDia.dataset.dias;
+    if(diasEsperados != nDias){
+      dashDia.innerHTML = Array.from({length:nDias}, (_,i)=>'<option value="'+(i+1)+'">Dia '+(i+1)+'</option>').join('');
+      dashDia.dataset.dias = nDias;
+    }
+    dashDia.value = filtro.dia;
     dashMes.value = filtro.mes; dashAno.value = filtro.ano;
 
     const t = totaisDoMes(filtro.ano, filtro.mes);
@@ -1368,10 +1382,11 @@
   }
   function iconeAlerta(tipo){ return tipo==='positivo'?'✓':tipo==='alerta-forte'?'⚠':'ℹ'; }
 
-  document.getElementById('dashMes').addEventListener('change', e => { filtro.mes = Number(e.target.value); renderDashboard(); });
-  document.getElementById('dashAno').addEventListener('change', e => { filtro.ano = Number(e.target.value); renderDashboard(); });
+  document.getElementById('dashDia').addEventListener('change', e => { filtro.dia = Number(e.target.value); renderDashboard(); });
+  document.getElementById('dashMes').addEventListener('change', e => { filtro.mes = Number(e.target.value); filtro.dia = 1; renderDashboard(); });
+  document.getElementById('dashAno').addEventListener('change', e => { filtro.ano = Number(e.target.value); filtro.dia = 1; renderDashboard(); });
   document.getElementById('btnHoje').addEventListener('click', () => {
-    filtro.ano = new Date().getFullYear(); filtro.mes = new Date().getMonth();
+    filtro.ano = new Date().getFullYear(); filtro.mes = new Date().getMonth(); filtro.dia = new Date().getDate();
     document.getElementById('dashAno').dataset.ready = '';
     renderDashboard();
   });
