@@ -196,6 +196,51 @@
   .rel-tab.active{background:var(--gradient-primary);color:#fff;border-color:transparent;}
   .rel-view{display:none;}
   .rel-view.active{display:block;}
+  .extrato-range-tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;}
+  .extrato-range-tabs::-webkit-scrollbar{display:none;}
+  .extrato-range-btn{flex:0 0 auto;padding:6px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .extrato-range-btn.active{background:var(--gradient-primary);color:#fff;border-color:transparent;}
+  .extrato-dia{background:var(--surface);border-radius:12px;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(255,255,255,.07);}
+  .extrato-dia-hoje{border-color:rgba(124,140,255,.5);}
+  .extrato-dia-vazio{opacity:.55;}
+  .extrato-dia-header{display:flex;justify-content:space-between;align-items:center;}
+  .extrato-dia-data{font-size:12.5px;font-weight:700;color:var(--ink-soft);}
+  .extrato-dia-saldo{font-size:13.5px;font-weight:800;}
+  .extrato-dia-saldo.pos{color:#22E3B2;}
+  .extrato-dia-saldo.neg{color:#FF6B85;}
+  .extrato-dia-itens{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:4px;}
+  .extrato-item{display:flex;justify-content:space-between;gap:8px;font-size:12px;cursor:pointer;}
+  .extrato-item-cat{color:var(--ink-soft);}
+  .extrato-item-valor{font-weight:700;white-space:nowrap;}
+  .extrato-item-valor.entrada{color:#22E3B2;}
+  .extrato-item-valor.saida,.extrato-item-valor.diario{color:#FF6B85;}
+  .extrato-item-herdado{cursor:default;opacity:.75;}
+  .extrato-quiet{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 12px;font-size:11px;color:var(--ink-soft);opacity:.65;}
+  .extrato-quiet small{opacity:.8;}
+  .extrato-quiet-info b{font-weight:700;}
+  .extrato-quiet-info b.pos{color:#22E3B2;}
+  .extrato-quiet-info b.neg{color:#FF6B85;}
+  .extrato-tabela-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,.08);}
+  .extrato-tabela{width:100%;border-collapse:collapse;font-size:11.5px;white-space:nowrap;}
+  .extrato-tabela thead th{position:sticky;top:0;background:var(--surface);color:var(--ink-soft);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:8px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,.1);}
+  .extrato-tabela thead th:first-child{text-align:left;}
+  .extrato-tabela td{padding:6px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);}
+  .extrato-tabela tbody tr:nth-child(even){background:rgba(255,255,255,.02);}
+  .extrato-col-dia{text-align:left !important;font-weight:700;color:var(--ink-soft);}
+  .extrato-col-dia small{display:inline-block;margin-left:5px;font-weight:500;opacity:.6;text-transform:lowercase;}
+  .extrato-entrada{color:#22E3B2;}
+  .extrato-saida{color:#93A2B8;}
+  .extrato-diario{color:#93A2B8;cursor:pointer;transition:background .15s;}
+  .extrato-diario:hover{background:rgba(124,140,255,.14);}
+  .extrato-zerar{font-size:10px;opacity:.45;font-style:italic;}
+  .extrato-saldo{font-weight:800;background:rgba(255,193,90,.10);color:#FFC15A;}
+  .extrato-saldo.neg{background:rgba(255,107,133,.16);color:#FF6B85;}
+  tr.extrato-linha-hoje td{box-shadow:inset 0 0 0 1px rgba(124,140,255,.5);}
+  tr.extrato-linha-folego .extrato-saldo{background:rgba(34,227,178,.22);color:#22E3B2;}
+  tr.extrato-linha-folego .extrato-saldo.neg{background:rgba(255,107,133,.16);color:#FF6B85;}
+  .extrato-legenda{font-size:10.5px;color:var(--ink-soft);opacity:.7;margin:8px 2px 0;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+  .extrato-legenda-dot{display:inline-block;width:9px;height:9px;border-radius:3px;background:rgba(34,227,178,.4);}
+  .extrato-legenda-dot.neg{background:rgba(255,107,133,.5);}
   .mes-card{background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid rgba(255,255,255,.07);}
   .mes-card-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
   .mes-card-nome{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;}
@@ -416,13 +461,24 @@
   <section class="screen" id="screen-relatorios">
     <div class="topbar"><h1>Relatórios</h1></div>
     <div class="rel-tabs">
-      <div class="rel-tab active" data-rel="fechamento">Fechamento</div>
+      <div class="rel-tab active" data-rel="extrato">Extrato</div>
+      <div class="rel-tab" data-rel="fechamento">Fechamento</div>
       <div class="rel-tab" data-rel="categorias">Categorias</div>
       <div class="rel-tab" data-rel="evolucao">Evolução</div>
       <div class="rel-tab" data-rel="comparacao">Comparar</div>
     </div>
 
-    <div class="rel-view active" id="rel-fechamento">
+    <div class="rel-view active" id="rel-extrato">
+      <div class="extrato-range-tabs">
+        <button class="extrato-range-btn active" data-range="salario" type="button">Até o salário</button>
+        <button class="extrato-range-btn" data-range="30" type="button">30 dias</button>
+        <button class="extrato-range-btn" data-range="60" type="button">60 dias</button>
+        <button class="extrato-range-btn" data-range="90" type="button">90 dias</button>
+      </div>
+      <div id="tabelaExtrato"></div>
+    </div>
+
+    <div class="rel-view" id="rel-fechamento">
       <div class="ano-compare-select"><select id="fechamentoAno"></select></div>
       <div id="tabelaFechamento"></div>
     </div>
@@ -534,7 +590,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-be</p>
+    <p class="versao-app">Versão do app: 2026-09-11-bj</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -608,6 +664,22 @@
       <div class="modal-acoes">
         <button class="btn-secundario" id="btnConfirmarNao">Cancelar</button>
         <button class="btn-primario" id="btnConfirmarSim">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL EDITAR DIÁRIO DO DIA (edição rápida a partir do Extrato) ===== -->
+  <div class="modal-overlay" id="modalDiarioDia">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <button class="modal-close" data-close-modal type="button">✕</button>
+      <h2 class="modal-title" id="diaDiarioTitulo">Diário do dia</h2>
+      <input type="hidden" id="diaDiarioIso">
+      <div class="field"><label>Gasto diário nesse dia</label><input id="diaDiarioValor" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Isso muda só esse dia — os outros continuam com o valor padrão.</p>
+      <div class="modal-acoes">
+        <button class="btn-secundario" id="btnDiaDiarioRemover" style="display:none;">Voltar ao padrão</button>
+        <button class="btn-primario" id="btnDiaDiarioSalvar">Salvar</button>
       </div>
     </div>
   </div>
@@ -1748,6 +1820,7 @@
     document.getElementById('compAnoA').value = Math.max(state.config.anoInicial, filtro.ano-1);
     document.getElementById('compAnoB').value = filtro.ano;
 
+    renderExtrato();
     renderFechamento();
     renderCategorias();
     renderEvolucao();
@@ -1758,6 +1831,164 @@
     document.querySelectorAll('.rel-view').forEach(v=>v.classList.remove('active'));
     document.getElementById('rel-'+tab.dataset.rel).classList.add('active');
   }));
+
+  const DIAS_SEMANA_ABREV = ['dom','seg','ter','qua','qui','sex','sáb'];
+  function parseISO(iso){ const [y,m,d] = iso.split('-').map(Number); return {ano:y, mes:m-1, dia:d}; }
+  function addMeses(ano, mesIdx0, n){
+    const total = mesIdx0 + n;
+    const anoNovo = ano + Math.floor(total/12);
+    const mesNovo = ((total % 12) + 12) % 12;
+    return [anoNovo, mesNovo];
+  }
+  function addDiasISO(iso, n){ const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return isoDate(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+  // acha o dia (número) da véspera do salário daquele mês, ou null se não achar salário
+  function diaFolegoDoMes(ano, mes){
+    garantirRecorrencias(ano, mes);
+    const prefixo = ano+'-'+pad(mes+1)+'-';
+    const candidatosSerie = state.movimentacoes.filter(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo) && (m.recorrente || m.origemRecorrenteId));
+    const salarioMes = candidatosSerie[0] || state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
+    if(!salarioMes) return null;
+    const diaAnterior = Number(salarioMes.data.split('-')[2]) - 1;
+    return diaAnterior >= 1 ? diaAnterior : null;
+  }
+  // acha a data (iso) do próximo salário a partir de uma data de referência (olha até 6 meses à frente)
+  function proximoSalarioApartirDe(isoReferencia){
+    const ref = parseISO(isoReferencia);
+    let ano = ref.ano, mes = ref.mes;
+    for(let i=0; i<6; i++){
+      garantirRecorrencias(ano, mes);
+      const prefixo = ano+'-'+pad(mes+1)+'-';
+      const candidatosSerie = state.movimentacoes.filter(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo) && (m.recorrente || m.origemRecorrenteId));
+      const salarioMes = candidatosSerie[0] || state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
+      if(salarioMes){
+        const diaSalario = Number(salarioMes.data.split('-')[2]);
+        if(i > 0 || diaSalario > ref.dia) return salarioMes.data;
+      }
+      [ano, mes] = addMeses(ano, mes, 1);
+    }
+    return null;
+  }
+  // saldo diário dia-a-dia para um intervalo arbitrário (pode cruzar meses)
+  function saldosDiariosIntervalo(isoInicio, isoFim){
+    const inicio = parseISO(isoInicio), fim = parseISO(isoFim);
+    let anoC = inicio.ano, mesC = inicio.mes;
+    while(anoC < fim.ano || (anoC===fim.ano && mesC<=fim.mes)){
+      garantirRecorrencias(anoC, mesC);
+      [anoC, mesC] = addMeses(anoC, mesC, 1);
+    }
+    let saldo = inicio.dia === 1 ? saldoInicialDoMes(inicio.ano, inicio.mes) : saldoAteODia(inicio.ano, inicio.mes, inicio.dia-1);
+    const arr = [];
+    let iso = isoInicio;
+    let guarda = 0;
+    while(guarda < 400){
+      const t = totaisDoDia(iso);
+      saldo += t.entradas - t.saidas - t.diario;
+      const p = parseISO(iso);
+      arr.push({ dia:p.dia, mes:p.mes, ano:p.ano, iso, saldo, ...t });
+      if(iso === isoFim) break;
+      iso = addDiasISO(iso, 1);
+      guarda++;
+    }
+    return arr;
+  }
+  // dias que são "véspera do salário" dentro de um intervalo (pode ter mais de 1 se o intervalo for longo)
+  function diasFolegoNoIntervalo(isoInicio, isoFim){
+    const set = new Set();
+    const inicio = parseISO(isoInicio), fim = parseISO(isoFim);
+    let ano = inicio.ano, mes = inicio.mes;
+    while(ano < fim.ano || (ano===fim.ano && mes<=fim.mes)){
+      const dv = diaFolegoDoMes(ano, mes);
+      if(dv){
+        const iso = isoDate(ano, mes, dv);
+        if(iso >= isoInicio && iso <= isoFim) set.add(iso);
+      }
+      [ano, mes] = addMeses(ano, mes, 1);
+    }
+    return set;
+  }
+
+  let extratoRangeAtivo = 'salario';
+  document.querySelectorAll('.extrato-range-btn').forEach(btn => btn.addEventListener('click', () => {
+    extratoRangeAtivo = btn.dataset.range;
+    document.querySelectorAll('.extrato-range-btn').forEach(b => b.classList.toggle('active', b===btn));
+    renderExtrato();
+  }));
+
+  function renderExtrato(){
+    const hojeISO = todayISO();
+    let isoFim;
+    if(extratoRangeAtivo === 'salario'){
+      isoFim = proximoSalarioApartirDe(hojeISO) || addDiasISO(hojeISO, 30);
+    }else{
+      isoFim = addDiasISO(hojeISO, Number(extratoRangeAtivo));
+    }
+    const dias = saldosDiariosIntervalo(hojeISO, isoFim);
+    const diasFolego = diasFolegoNoIntervalo(hojeISO, isoFim);
+
+    const linhas = dias.map(d => {
+      const diaSemana = DIAS_SEMANA_ABREV[new Date(d.ano, d.mes, d.dia).getDay()];
+      const classesExtra = [];
+      if(d.iso === hojeISO) classesExtra.push('extrato-linha-hoje');
+      if(diasFolego.has(d.iso)) classesExtra.push('extrato-linha-folego');
+      const saldoNeg = d.saldo < 0;
+      return '<tr class="'+classesExtra.join(' ')+'">'+
+        '<td class="extrato-col-dia">'+String(d.dia).padStart(2,'0')+'/'+String(d.mes+1).padStart(2,'0')+'<small>'+diaSemana+'</small></td>'+
+        '<td class="extrato-col-num extrato-entrada">'+(d.entradas>0 ? fmt(d.entradas) : '')+'</td>'+
+        '<td class="extrato-col-num extrato-saida">'+(d.saidas>0 ? fmt(d.saidas) : '')+'</td>'+
+        '<td class="extrato-col-num extrato-diario" data-iso="'+d.iso+'">'+(d.diario>0 ? fmt(d.diario) : '<span class="extrato-zerar">definir</span>')+'</td>'+
+        '<td class="extrato-col-num extrato-saldo'+(saldoNeg?' neg':'')+'">'+fmt(d.saldo)+'</td>'+
+      '</tr>';
+    }).join('');
+
+    const html = '<div class="extrato-tabela-wrap"><table class="extrato-tabela">'+
+      '<thead><tr><th></th><th>Entrada</th><th>Saída</th><th>Diário</th><th>Saldo</th></tr></thead>'+
+      '<tbody>'+linhas+'</tbody>'+
+    '</table></div>'+
+    (diasFolego.size > 0 ? '<p class="extrato-legenda"><span class="extrato-legenda-dot folego"></span> véspera do salário (Fôlego) &nbsp; <span class="extrato-legenda-dot neg"></span> saldo negativo</p>' : '<p class="extrato-legenda"><span class="extrato-legenda-dot neg"></span> saldo negativo</p>');
+
+    document.getElementById('tabelaExtrato').innerHTML = html;
+    document.querySelectorAll('#tabelaExtrato .extrato-diario[data-iso]').forEach(td => td.addEventListener('click', () => abrirEditorDiarioDia(td.dataset.iso)));
+  }
+
+  bindMoney(document.getElementById('diaDiarioValor'));
+  function abrirEditorDiarioDia(iso){
+    const [y,m,d] = iso.split('-').map(Number);
+    document.getElementById('diaDiarioTitulo').textContent = 'Diário de ' + String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+y;
+    document.getElementById('diaDiarioIso').value = iso;
+    const avulso = state.movimentacoes.find(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
+    setMoneyValue(document.getElementById('diaDiarioValor'), avulso ? avulso.valor : diarioValorParaDia(iso));
+    document.getElementById('btnDiaDiarioRemover').style.display = avulso ? 'inline-block' : 'none';
+    document.getElementById('modalDiarioDia').classList.add('show');
+  }
+  document.getElementById('btnDiaDiarioSalvar').addEventListener('click', async () => {
+    const iso = document.getElementById('diaDiarioIso').value;
+    const valor = centsFromInput(document.getElementById('diaDiarioValor'));
+    const avulso = state.movimentacoes.find(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
+    if(avulso){
+      avulso.valor = valor;
+    }else{
+      state.movimentacoes.push({
+        id: uid(), data: iso, tipo:'diario', valor, categoria:'Outros',
+        descricao:'Ajuste manual do dia', formaPagamento:'Dinheiro',
+        recorrente:false, recorrenteDiario:false, recorrenteQtdMeses:null,
+        origemRecorrenteId:null, criadoEm:new Date().toISOString()
+      });
+    }
+    limparCache(); await salvarMovimentacoes();
+    document.getElementById('modalDiarioDia').classList.remove('show');
+    mostrarToast('Diário do dia atualizado');
+    renderTelaAtual();
+  });
+  document.getElementById('btnDiaDiarioRemover').addEventListener('click', async () => {
+    const iso = document.getElementById('diaDiarioIso').value;
+    state.movimentacoes = state.movimentacoes.filter(mv => !(mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario));
+    limparCache(); await salvarMovimentacoes();
+    document.getElementById('modalDiarioDia').classList.remove('show');
+    mostrarToast('Voltou pro valor padrão');
+    renderTelaAtual();
+  });
+
 
   let fechamentoMostrarTudo = false;
   function renderFechamento(){
