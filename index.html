@@ -609,7 +609,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-bz</p>
+    <p class="versao-app">Versão do app: 2026-09-11-ca</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1321,34 +1321,35 @@
   function renderChartComparativo(ctx, grande){
     let labels, entradasArr, saidasArr, economiaArr, coresEntradas, coresSaidas, coresEconomia, temProjecao=false, corteProjecao=-1;
 
-    // janela rolante ancorada em hoje: começa no primeiro mês com dado real (sem meses vazios antes), até 12 meses projetados à frente
-    const hoje = new Date();
+    // janela rolante ancorada no mês selecionado no filtro (Dia/Mês/Ano do Dashboard), até 12 meses à frente dele
+    const hojeReal = new Date();
+    const anoRef = filtro.ano, mesRef = filtro.mes;
     let janela = [];
     for(let i=-11; i<=0; i++){
-      const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
-      janela.push({ano:d.getFullYear(), mes:d.getMonth(), projetado:false});
+      const d = new Date(anoRef, mesRef+i, 1);
+      janela.push({ano:d.getFullYear(), mes:d.getMonth()});
     }
-    // remove os meses vazios do começo (sem entrada nem saída), mantendo pelo menos o mês atual
+    // remove os meses vazios do começo (sem entrada nem saída), mantendo pelo menos o mês do filtro
     while(janela.length > 1){
       const t = totaisDoMes(janela[0].ano, janela[0].mes);
       if(t.entradas === 0 && t.saidaTotal === 0) janela.shift(); else break;
     }
     const ultimosReais = janela.slice(-3).map(j => totaisDoMes(j.ano,j.mes));
-    const mediaEntradas = ultimosReais.reduce((a,t)=>a+t.entradas,0)/ultimosReais.length;
-    const mediaSaidas = ultimosReais.reduce((a,t)=>a+t.saidaTotal,0)/ultimosReais.length;
-    const temHistoricoReal = mediaEntradas > 0 || mediaSaidas > 0;
+    const temHistoricoReal = ultimosReais.some(t => t.entradas > 0 || t.saidaTotal > 0);
     if(temHistoricoReal){
       const mesesFuturos = grande ? 12 : 3;
       for(let i=1; i<=mesesFuturos; i++){
-        const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
-        janela.push({ano:d.getFullYear(), mes:d.getMonth(), projetado:true});
+        const d = new Date(anoRef, mesRef+i, 1);
+        janela.push({ano:d.getFullYear(), mes:d.getMonth()});
       }
-      temProjecao = true;
     }
+    // "projetado" (cor mais clara) é qualquer mês depois do mês atual DE VERDADE — não do mês que está no filtro
+    janela.forEach(j => { j.projetado = (j.ano > hojeReal.getFullYear()) || (j.ano === hojeReal.getFullYear() && j.mes > hojeReal.getMonth()); });
+    temProjecao = janela.some(j => j.projetado);
     corteProjecao = janela.findIndex(j=>j.projetado);
     labels = janela.map(j => MESES_ABREV[j.mes]+'/'+String(j.ano).slice(2));
-    // meses "projetados" usam o cálculo real (respeitando as recorrências já cadastradas pra aquele mês),
-    // igual aos meses passados — só a cor fica mais clara pra indicar que ainda pode mudar
+    // todos os meses (inclusive os futuros) usam o cálculo real, respeitando as recorrências já cadastradas pra aquele mês —
+    // a cor mais clara só indica que o mês ainda não chegou de verdade, os números continuam exatos
     entradasArr = janela.map(j => totaisDoMes(j.ano,j.mes).entradas/100);
     saidasArr = janela.map(j => totaisDoMes(j.ano,j.mes).saidaTotal/100);
     economiaArr = janela.map(j => totaisDoMes(j.ano,j.mes).economia/100);
