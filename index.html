@@ -293,11 +293,12 @@
   /* ---- configurações ---- */
   .config-section{background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.07);margin-bottom:14px;}
   .config-section h3{font-size:13.5px;margin-bottom:12px;}
-  .field{margin-bottom:12px;}
+  .field{margin-bottom:12px;min-width:0;}
   .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;}
   .field input, .field select, .field textarea{
-    width:100%;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background-color:var(--surface-alt);color:var(--ink);font-size:16px;font-family:inherit;
+    width:100%;max-width:100%;min-width:0;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background-color:var(--surface-alt);color:var(--ink);font-size:16px;font-family:inherit;
   }
+  .field input[type=date]{-webkit-appearance:none;appearance:none;}
   .field select{padding-right:30px;}
   .switch-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;}
   .switch{position:relative;width:42px;height:24px;flex:0 0 auto;}
@@ -346,7 +347,7 @@
   .modal-overlay.show{display:flex;}
   .modal-sheet{
     background:var(--surface);width:100%;max-width:480px;border-radius:20px 20px 0 0;
-    padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;overflow-x:hidden;
   }
   .modal-handle{width:36px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 14px;}
   .modal-title{font-size:16px;margin-bottom:14px;}
@@ -601,7 +602,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-br</p>
+    <p class="versao-app">Versão do app: 2026-09-11-bs</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
