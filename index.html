@@ -76,7 +76,7 @@
   /* ---- topo comum ---- */
   .topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px;}
   .topbar h1{font-size:21px;letter-spacing:-.3px;}
-  .periodo{display:flex;gap:5px;flex-wrap:wrap;width:100%;justify-content:flex-end;}
+  .periodo{display:flex;gap:5px;flex-wrap:wrap;width:100%;justify-content:flex-start;}
   .periodo select{
     font-family:'Inter',sans-serif;font-size:16px;font-weight:600;color:var(--ink);
     background-color:var(--surface);border:1px solid var(--line);border-radius:9px;padding:4px 20px 4px 7px;
@@ -222,14 +222,13 @@
   .extrato-quiet-info b.neg{color:#FF6B85;}
   .extrato-tabela-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,.08);}
   .extrato-tabela{width:100%;border-collapse:collapse;font-size:10.5px;table-layout:fixed;}
-  .extrato-tabela thead th{position:sticky;top:0;background:var(--surface);color:var(--ink-soft);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.01em;padding:7px 3px;text-align:right;border-bottom:1px solid rgba(255,255,255,.1);}
-  .extrato-tabela thead th:first-child{text-align:left;}
-  .extrato-tabela td{padding:5px 3px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .extrato-tabela thead th{position:sticky;top:0;background:var(--surface);color:var(--ink-soft);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.01em;padding:7px 3px;text-align:center;border-bottom:1px solid rgba(255,255,255,.1);}
+  .extrato-tabela td{padding:5px 3px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .extrato-tabela tbody tr:nth-child(even){background:rgba(255,255,255,.02);}
-  .extrato-col-dia{width:15%;}
-  .extrato-col-num{width:21.25%;}
-  .extrato-col-dia{text-align:left !important;font-weight:700;color:var(--ink-soft);}
-  .extrato-col-dia small{display:inline-block;margin-left:2px;font-weight:500;opacity:.6;text-transform:lowercase;font-size:8.5px;}
+  .extrato-col-dia{width:20%;}
+  .extrato-col-num{width:20%;}
+  .extrato-col-dia{text-align:center;font-weight:700;color:var(--ink-soft);}
+  .extrato-col-dia small{display:block;margin-top:1px;font-weight:500;opacity:.6;text-transform:lowercase;font-size:8.5px;}
   .extrato-entrada{color:#22E3B2;}
   .extrato-saida{color:#93A2B8;}
   .extrato-diario{color:#93A2B8;cursor:pointer;transition:background .15s;}
@@ -386,6 +385,7 @@
     <div class="topbar">
       <h1>Visão geral</h1>
       <div class="periodo">
+        <select id="dashDia"></select>
         <select id="dashMes"></select>
         <select id="dashAno"></select>
         <button id="btnHoje" class="btn-hoje" type="button" title="Voltar para hoje">Hoje</button>
@@ -592,7 +592,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-bk</p>
+    <p class="versao-app">Versão do app: 2026-09-11-bn</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1493,10 +1493,21 @@
 
   function renderDashboard(){
     garantirRecorrencias(filtro.ano, filtro.mes);
-    const dashMes = document.getElementById('dashMes'), dashAno = document.getElementById('dashAno');
+    const dashDia = document.getElementById('dashDia'), dashMes = document.getElementById('dashMes'), dashAno = document.getElementById('dashAno');
     if(!dashMes.dataset.ready){ popularSelectMeses(dashMes); dashMes.dataset.ready='1'; }
     if(!dashAno.dataset.ready){ popularSelectAnos(dashAno, filtro.ano); dashAno.dataset.ready='1'; }
+    const nDias = daysInMonth(filtro.ano, filtro.mes);
+    if(filtro.dia > nDias) filtro.dia = nDias;
+    if(dashDia.dataset.dias != nDias){
+      dashDia.innerHTML = Array.from({length:nDias}, (_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('');
+      dashDia.dataset.dias = nDias;
+    }
+    dashDia.value = filtro.dia;
     dashMes.value = filtro.mes; dashAno.value = filtro.ano;
+
+    const hoje = new Date();
+    const estaEmHoje = (filtro.ano === hoje.getFullYear() && filtro.mes === hoje.getMonth() && filtro.dia === hoje.getDate());
+    document.getElementById('btnHoje').style.display = estaEmHoje ? 'none' : 'inline-block';
 
     const t = totaisDoMes(filtro.ano, filtro.mes);
     document.getElementById('cardSaldo').textContent = fmt(saldoAteHoje());
@@ -1541,11 +1552,13 @@
   }
   function iconeAlerta(tipo){ return tipo==='positivo'?'✓':tipo==='alerta-forte'?'⚠':'ℹ'; }
 
+  document.getElementById('dashDia').addEventListener('change', e => { filtro.dia = Number(e.target.value); renderDashboard(); });
   document.getElementById('dashMes').addEventListener('change', e => { filtro.mes = Number(e.target.value); renderDashboard(); });
   document.getElementById('dashAno').addEventListener('change', e => { filtro.ano = Number(e.target.value); renderDashboard(); });
   document.getElementById('btnHoje').addEventListener('click', () => {
-    filtro.ano = new Date().getFullYear(); filtro.mes = new Date().getMonth();
+    filtro.ano = new Date().getFullYear(); filtro.mes = new Date().getMonth(); filtro.dia = new Date().getDate();
     document.getElementById('dashAno').dataset.ready = '';
+    document.getElementById('dashDia').dataset.dias = '';
     renderDashboard();
   });
 
@@ -1936,7 +1949,7 @@
       if(diasFolego.has(d.iso)) classesExtra.push('extrato-linha-folego');
       const saldoNeg = d.saldo < 0;
       return '<tr class="'+classesExtra.join(' ')+'">'+
-        '<td class="extrato-col-dia">'+String(d.dia).padStart(2,'0')+'/'+String(d.mes+1).padStart(2,'0')+'<small>'+diaSemana+'</small></td>'+
+        '<td class="extrato-col-dia">'+String(d.dia).padStart(2,'0')+'/'+String(d.mes+1).padStart(2,'0')+'/'+String(d.ano).slice(-2)+'<small>'+diaSemana+'</small></td>'+
         '<td class="extrato-col-num extrato-entrada">'+(d.entradas>0 ? fmtNum(d.entradas) : '')+'</td>'+
         '<td class="extrato-col-num extrato-saida">'+(d.saidas>0 ? fmtNum(d.saidas) : '')+'</td>'+
         '<td class="extrato-col-num extrato-diario" data-iso="'+d.iso+'">'+(d.diario>0 ? fmtNum(d.diario) : '<span class="extrato-zerar">def.</span>')+'</td>'+
@@ -2454,7 +2467,7 @@
       anoInicial,
       diarioMigrado: true
     };
-    filtro = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
+    filtro = { ano: new Date().getFullYear(), mes: new Date().getMonth(), dia: new Date().getDate() };
     if(diarioValorInicial > 0){
       state.movimentacoes.push({
         id: uid(), data: todayISO(), tipo:'diario', valor: diarioValorInicial, categoria:'Outros',
