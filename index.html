@@ -609,7 +609,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-bv</p>
+    <p class="versao-app">Versão do app: 2026-09-11-by</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1428,12 +1428,12 @@
     for(let i=0; i<12; i++){
       const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
       const ano = d.getFullYear(), mes = d.getMonth();
-      const baseline = totaisDoMes(ano,mes).saldoFinal;
       const diferencaMeses = (ano-simAno)*12 + (mes-simMes);
-      let ocorrencias = 0;
-      if(diferencaMeses >= 0){
-        ocorrencias = recorrenteSim ? (qtdSim ? Math.min(diferencaMeses+1, qtdSim) : diferencaMeses+1) : 1;
-      }
+      if(diferencaMeses < 0) continue; // antes do mês da decisão, não mostra (não tem impacto nenhum)
+      const baseline = totaisDoMes(ano,mes).saldoFinal;
+      // uma parcela recorrente por mês (não acumula as anteriores); gasto único conta uma vez e persiste dali pra frente
+      let ocorrencias = 1;
+      if(recorrenteSim && qtdSim && diferencaMeses >= qtdSim) ocorrencias = 0;
       const sinal = tipoSim==='entrada' ? 1 : -1;
       const impacto = sinal * ocorrencias * valorCents;
       resultados.push({ano, mes, baseline, simulado: baseline+impacto});
@@ -1461,16 +1461,19 @@
       const diaAntes = diaSalario - 1;
       if(diaAntes < 1) continue;
 
+      const diferencaMeses = (ano-simAno)*12 + (mes-simMes);
+      // antes do mês da decisão — ainda não existe, não mostra
+      if(diferencaMeses < 0) continue;
+
       const dias = saldosDiariosDoMes(ano, mes);
       const baseline = dias[diaAntes-1].saldo;
 
-      const diferencaMeses = (ano-simAno)*12 + (mes-simMes);
-      let ocorrencias = 0;
-      if(diferencaMeses > 0){
-        ocorrencias = recorrenteSim ? (qtdSim ? Math.min(diferencaMeses+1, qtdSim) : diferencaMeses+1) : 1;
-      }else if(diferencaMeses === 0 && diaSimulado <= diaAntes){
-        ocorrencias = 1;
-      }
+      // uma parcela recorrente por mês (não acumula as anteriores); gasto único conta uma vez e persiste dali pra frente
+      let ocorrencias = 1;
+      // no mês da própria decisão, se a véspera do salário cai antes do dia da parcela, essa parcela ainda não tinha vencido naquele corte
+      if(diferencaMeses === 0 && diaSimulado > diaAntes) ocorrencias = 0;
+      if(recorrenteSim && qtdSim && diferencaMeses >= qtdSim) ocorrencias = 0;
+
       const impacto = sinal * ocorrencias * valorCents;
       resultados.push({ano, mes, diaAntes, baseline, simulado: baseline+impacto});
     }
