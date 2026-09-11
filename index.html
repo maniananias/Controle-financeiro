@@ -606,6 +606,12 @@
     </div>
 
     <div class="config-section">
+      <h3>💼 Dia de recebimento</h3>
+      <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) em todo o app — Dashboard, Extrato e Simulação. Se o mês tiver menos dias que esse número (ex: fevereiro), usa o último dia do mês.</p>
+      <div class="field"><label>Todo dia</label><input id="cfgDiaRecebimento" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 25"></div>
+    </div>
+
+    <div class="config-section">
       <h3>🎯 Recalibrar saldo</h3>
       <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Se o saldo atual do app não bate com o que você tem de verdade na conta hoje, digite o valor real aqui. O app cria um ajuste automático na data de hoje — nada do seu histórico anterior é alterado.</p>
       <div class="field"><label>Qual é o seu saldo real hoje?</label><input id="cfgSaldoReal" inputmode="numeric" placeholder="R$ 0,00"></div>
@@ -628,7 +634,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-ch</p>
+    <p class="versao-app">Versão do app: 2026-09-11-ci</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -893,6 +899,7 @@
     try{ const r = await storage.get('fin-diario-overrides', false); if(r) state.diarioOverrides = JSON.parse(r.value); }catch(e){}
     try{ const r = await storage.get('fin-metas', false); if(r) state.metas = JSON.parse(r.value); }catch(e){}
     migrarDiarioParaMovimentacoes();
+    migrarDiaRecebimento();
     repararSeriesCorrompidas();
   }
   // corrige lançamentos que ficaram marcados como "filho" (origemRecorrenteId) e "origem" (recorrente:true) ao mesmo tempo
@@ -950,6 +957,23 @@
     if(mudou) salvarMovimentacoes();
     salvarConfig();
     salvarOverrides();
+  }
+  // migração única: descobre o "dia de recebimento" a partir do salário mais recente já lançado,
+  // pra virar um número fixo em config em vez de procurar nos lançamentos toda vez (sem mudar nada do que já estava calculado)
+  function migrarDiaRecebimento(){
+    if(!state.config || state.config.diaRecebimento) return;
+    const salarios = state.movimentacoes
+      .filter(m => m.tipo==='entrada' && m.categoria==='Salário')
+      .sort((a,b) => b.data.localeCompare(a.data));
+    if(salarios.length > 0){
+      state.config.diaRecebimento = Number(salarios[0].data.split('-')[2]);
+      try{ storage.set('fin-config', JSON.stringify(state.config), false); }catch(e){} // silencioso, sem toast — é uma migração automática
+    }
+  }
+  // dia do salário naquele mês, sempre o mesmo número configurado (ajustado se o mês tiver menos dias, ex: fevereiro)
+  function diaSalarioConfigurado(ano, mes){
+    if(!state.config.diaRecebimento) return null;
+    return Math.min(state.config.diaRecebimento, daysInMonth(ano, mes));
   }
   async function salvarConfig(){ try{ await storage.set('fin-config', JSON.stringify(state.config), false); mostrarToast('Salvo'); }catch(e){ mostrarToast('Não consegui salvar agora, tenta de novo'); } }
   async function salvarMovimentacoes(){ try{ await storage.set('fin-movimentacoes', JSON.stringify(state.movimentacoes), false); }catch(e){ mostrarToast('Não consegui salvar agora, tenta de novo'); } }
@@ -1278,15 +1302,10 @@
   function renderFolego(){
     const box = document.getElementById('folegoBox');
     garantirRecorrencias(filtro.ano, filtro.mes);
-    const prefixo = filtro.ano+'-'+pad(filtro.mes+1)+'-';
-    // prioriza o lançamento que já faz parte de uma série recorrente (o "salário de verdade"),
-    // só cai pra qualquer um chamado Salário se ainda não existir série (ex: primeiro mês lançado)
-    const candidatosSerie = state.movimentacoes.filter(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo) && (m.recorrente || m.origemRecorrenteId));
-    const salarioMes = candidatosSerie[0] || state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
-    if(!salarioMes){ box.style.display = 'none'; return; }
+    const diaSalario = diaSalarioConfigurado(filtro.ano, filtro.mes);
+    if(!diaSalario){ box.style.display = 'none'; return; }
     box.style.display = 'block';
 
-    const diaSalario = Number(salarioMes.data.split('-')[2]);
     const diaAnterior = diaSalario - 1;
     const nomeMes = MESES[filtro.mes] + '/' + filtro.ano;
     if(diaAnterior < 1){ box.style.display = 'none'; return; }
@@ -1476,11 +1495,8 @@
       const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
       const ano = d.getFullYear(), mes = d.getMonth();
       garantirRecorrencias(ano, mes);
-      const prefixo = ano+'-'+pad(mes+1)+'-';
-      const candidatosSerie = state.movimentacoes.filter(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo) && (m.recorrente || m.origemRecorrenteId));
-      const salarioMes = candidatosSerie[0] || state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
-      if(!salarioMes) continue;
-      const diaSalario = Number(salarioMes.data.split('-')[2]);
+      const diaSalario = diaSalarioConfigurado(ano, mes);
+      if(!diaSalario) continue;
       const diaAntes = diaSalario - 1;
       if(diaAntes < 1) continue;
 
@@ -1965,32 +1981,24 @@
   }
   function addDiasISO(iso, n){ const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return isoDate(d.getFullYear(), d.getMonth(), d.getDate()); }
 
-  // acha o dia (número) da véspera do salário daquele mês, ou null se não achar salário
+  // acha o dia (número) da véspera do salário daquele mês, ou null se não tiver dia de recebimento configurado
   function diaFolegoDoMes(ano, mes){
     garantirRecorrencias(ano, mes);
-    const prefixo = ano+'-'+pad(mes+1)+'-';
-    const candidatosSerie = state.movimentacoes.filter(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo) && (m.recorrente || m.origemRecorrenteId));
-    const salarioMes = candidatosSerie[0] || state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
-    if(!salarioMes) return null;
-    const diaAnterior = Number(salarioMes.data.split('-')[2]) - 1;
+    const diaSalario = diaSalarioConfigurado(ano, mes);
+    if(!diaSalario) return null;
+    const diaAnterior = diaSalario - 1;
     return diaAnterior >= 1 ? diaAnterior : null;
   }
-  // acha a data (iso) do próximo salário a partir de uma data de referência (olha até 6 meses à frente)
+  // acha a data (iso) do próximo salário a partir de uma data de referência
   function proximoSalarioApartirDe(isoReferencia){
     const ref = parseISO(isoReferencia);
+    if(!state.config.diaRecebimento) return null;
     let ano = ref.ano, mes = ref.mes;
-    for(let i=0; i<6; i++){
-      garantirRecorrencias(ano, mes);
-      const prefixo = ano+'-'+pad(mes+1)+'-';
-      const candidatosSerie = state.movimentacoes.filter(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo) && (m.recorrente || m.origemRecorrenteId));
-      const salarioMes = candidatosSerie[0] || state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
-      if(salarioMes){
-        const diaSalario = Number(salarioMes.data.split('-')[2]);
-        if(i > 0 || diaSalario > ref.dia) return salarioMes.data;
-      }
-      [ano, mes] = addMeses(ano, mes, 1);
-    }
-    return null;
+    const diaEsteMes = diaSalarioConfigurado(ano, mes);
+    if(diaEsteMes > ref.dia) return isoDate(ano, mes, diaEsteMes);
+    [ano, mes] = addMeses(ano, mes, 1);
+    const diaProxMes = diaSalarioConfigurado(ano, mes);
+    return isoDate(ano, mes, diaProxMes);
   }
   // saldo diário dia-a-dia para um intervalo arbitrário (pode cruzar meses)
   function saldosDiariosIntervalo(isoInicio, isoFim){
@@ -2406,10 +2414,16 @@
     setMoneyValue(document.getElementById('cfgSaldoInicial'), state.config.saldoInicial);
     setMoneyValue(document.getElementById('cfgOrcamento'), state.config.orcamentoMensal);
     setMoneyValue(document.getElementById('cfgSaldoMinimo'), state.config.saldoMinimo);
+    document.getElementById('cfgDiaRecebimento').value = state.config.diaRecebimento || '';
   }
   bindMoney(document.getElementById('cfgSaldoInicial'), c => { state.config.saldoInicial = c; limparCache(); salvarConfig(); });
   bindMoney(document.getElementById('cfgOrcamento'), c => { state.config.orcamentoMensal = c; salvarConfig(); });
   bindMoney(document.getElementById('cfgSaldoMinimo'), c => { state.config.saldoMinimo = c; salvarConfig(); });
+  document.getElementById('cfgDiaRecebimento').addEventListener('change', e => {
+    const v = Math.max(1, Math.min(31, Number(e.target.value) || 0));
+    if(v > 0){ state.config.diaRecebimento = v; limparCache(); salvarConfig(); }
+    e.target.value = state.config.diaRecebimento || '';
+  });
   bindMoney(document.getElementById('cfgSaldoReal'));
   document.getElementById('btnIrParaDiario').addEventListener('click', () => {
     irPara('movs');
