@@ -82,6 +82,7 @@
     background-color:var(--surface);border:1px solid var(--line);border-radius:9px;padding:4px 20px 4px 7px;
   }
   .btn-hoje{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--primary);background:var(--primary-soft);border:1px solid var(--primary);border-radius:9px;padding:5px 9px;cursor:pointer;}
+  .btn-fechar-tela{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink-soft);background:var(--surface-alt);border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer;flex:none;}
 
   /* ---- cards do dashboard ---- */
   .cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
@@ -467,7 +468,7 @@
 
   <!-- ===== SIMULAÇÃO ===== -->
   <section class="screen" id="screen-simulacao">
-    <div class="topbar"><h1>Simular decisão</h1></div>
+    <div class="topbar"><h1>Simular decisão</h1><button class="btn-fechar-tela" id="btnFecharSimulacao" type="button">✕ Fechar</button></div>
     <p class="sim-intro">Antes de gastar (ou receber) alguma coisa, teste aqui o impacto real nos próximos 12 meses — nada é lançado até você confirmar.</p>
 
     <div class="tipo-toggle">
@@ -533,7 +534,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-ay</p>
+    <p class="versao-app">Versão do app: 2026-09-11-az</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1000,6 +1001,7 @@
     if(tela === 'simulacao') renderSimulacaoTela();
   }
   document.getElementById('btnAtalhoSimular').addEventListener('click', () => irPara('simulacao'));
+  document.getElementById('btnFecharSimulacao').addEventListener('click', () => irPara('dashboard'));
   document.getElementById('btnAbrirMenu').addEventListener('click', () => {
     const atual = document.querySelector('.screen.active').id.replace('screen-','');
     document.querySelectorAll('.mais-item').forEach(b => b.classList.toggle('mais-item-atual', b.dataset.screen === atual));
