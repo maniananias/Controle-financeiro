@@ -533,7 +533,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-ax</p>
+    <p class="versao-app">Versão do app: 2026-09-11-ay</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1307,7 +1307,16 @@
     const resultados = calcularImpactoSimulado(data, simTipo, valor, recorrente, qtd);
     ultimaSimulacao = { data, tipo:simTipo, valor, categoria, recorrente, qtd };
 
-    const ultimo = resultados[resultados.length-1];
+    // se a decisão tem um fim definido (ex: parcelado em 5x), o resumo foca no mês da última parcela,
+    // não sempre em 12 meses à frente (senão vira um mês bem depois de a decisão já ter acabado)
+    let indiceResumo = resultados.length - 1;
+    if(recorrente && qtd){
+      const hoje = new Date();
+      const [ay,am] = data.split('-').map(Number);
+      const mesesDesdeHoje = (ay - hoje.getFullYear())*12 + ((am-1) - hoje.getMonth());
+      indiceResumo = Math.max(0, Math.min(mesesDesdeHoje + qtd - 1, resultados.length-1));
+    }
+    const ultimo = resultados[indiceResumo];
     const diferenca = ultimo.simulado - ultimo.baseline;
     const nomeUltimoMes = MESES[ultimo.mes] + '/' + ultimo.ano;
     const resumo = document.getElementById('simResumo');
