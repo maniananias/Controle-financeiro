@@ -365,6 +365,9 @@
 
     <div class="ajuste-box" id="folegoBox" style="display:none;">
       <p class="ajuste-titulo" id="folegoTitulo">Fôlego até o próximo recebimento</p>
+      <div class="ajuste-linhas">
+        <div><span id="folegoSaldoDiaLabel">Saldo previsto</span><b class="mono" id="folegoSaldoDia">R$ 0,00</b></div>
+      </div>
       <div class="ajuste-resultado" id="folegoResultado"></div>
       <p class="chart-hint" style="margin-top:8px;">Olha só até essa data — contas que vencem depois dela (mesmo dentro do mesmo mês) não entram nessa conta.</p>
     </div>
@@ -524,7 +527,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-09-ao</p>
+    <p class="versao-app">Versão do app: 2026-09-10-ap</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -739,6 +742,19 @@
     try{ const r = await storage.get('fin-diario-overrides', false); if(r) state.diarioOverrides = JSON.parse(r.value); }catch(e){}
     try{ const r = await storage.get('fin-metas', false); if(r) state.metas = JSON.parse(r.value); }catch(e){}
     migrarDiarioParaMovimentacoes();
+    repararSeriesCorrompidas();
+  }
+  // corrige lançamentos que ficaram marcados como "filho" (origemRecorrenteId) e "origem" (recorrente:true) ao mesmo tempo
+  function repararSeriesCorrompidas(){
+    let mudou = false;
+    state.movimentacoes.forEach(m => {
+      if(m.origemRecorrenteId && m.recorrente){
+        m.recorrente = false;
+        m.recorrenteQtdMeses = null;
+        mudou = true;
+      }
+    });
+    if(mudou) salvarMovimentacoes();
   }
   // migração única: converte o antigo "gasto diário" (config + ajustes por dia) em lançamentos de verdade,
   // sem alterar nenhum valor já calculado no passado.
@@ -1096,6 +1112,11 @@
     const resultado = saldoAncora + entradasPeriodo - saidasPeriodo;
     const dataFormatada = formatBR(prox.data);
     const referencia = ehHojeDeVerdade ? 'seu saldo de hoje' : ('o saldo previsto pra ' + formatBR(dataAncoraISO));
+
+    document.getElementById('folegoSaldoDiaLabel').textContent = 'Saldo previsto pra ' + formatBR(dataAncoraISO) + (ehHojeDeVerdade ? ' (hoje)' : '');
+    const saldoDiaEl = document.getElementById('folegoSaldoDia');
+    saldoDiaEl.textContent = fmt(saldoAncora);
+    saldoDiaEl.className = 'mono ' + (saldoAncora >= 0 ? 'pos' : 'neg');
 
     document.getElementById('folegoTitulo').textContent = (ehHojeDeVerdade ? 'Fôlego até ' : 'Fôlego de '+formatBR(dataAncoraISO)+' até ') + dataFormatada + ' (' + (prox.descricao || prox.categoria) + ')';
     const el = document.getElementById('folegoResultado');
@@ -1560,6 +1581,10 @@
       document.getElementById('movRecorrenteQtd').value = m.recorrenteQtdMeses || '';
       document.getElementById('movRecorrenteDiario').checked = !!m.recorrenteDiario;
       document.getElementById('checkboxAplicarTodas').style.display = idOrigemDaSerie(m) ? 'flex' : 'none';
+      // um lançamento GERADO (filho de uma série) não pode virar origem própria — isso corrompia os dados
+      const ehFilhoDeSerie = !!m.origemRecorrenteId;
+      document.getElementById('checkboxRecorrenteMensal').style.display = (ehFilhoDeSerie || m.tipo==='diario') ? 'none' : 'flex';
+      if(ehFilhoDeSerie) document.getElementById('campoRecorrenteAte').style.display = 'none';
     }else{
       document.getElementById('movId').value = '';
       setTipoModal('saida', false);
@@ -1602,6 +1627,7 @@
     if(id){
       const atual = state.movimentacoes.find(m=>m.id===id);
       const origemId = idOrigemDaSerie(atual);
+      const ehFilhoDeSerie = !!atual.origemRecorrenteId;
       if(aplicarTodas && origemId){
         movimentacoesDaSerie(origemId).forEach(m => {
           Object.assign(m, payloadComum);
@@ -1610,7 +1636,10 @@
         atual.data = data;
       }else{
         const idx = state.movimentacoes.findIndex(m=>m.id===id);
-        state.movimentacoes[idx] = { ...state.movimentacoes[idx], ...payloadComum, data, recorrente, recorrenteQtdMeses, recorrenteDiario };
+        // um lançamento gerado (filho) nunca pode virar origem própria — só o "aplicar a todas" mexe na recorrência
+        const recorrenteFinal = ehFilhoDeSerie ? false : recorrente;
+        const qtdFinal = ehFilhoDeSerie ? null : recorrenteQtdMeses;
+        state.movimentacoes[idx] = { ...state.movimentacoes[idx], ...payloadComum, data, recorrente: recorrenteFinal, recorrenteQtdMeses: qtdFinal, recorrenteDiario };
       }
     }else{
       state.movimentacoes.push({ id: uid(), origemRecorrenteId:null, criadoEm:new Date().toISOString(), ...payloadComum, data, recorrente, recorrenteQtdMeses, recorrenteDiario });
