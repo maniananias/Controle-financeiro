@@ -113,6 +113,13 @@
   .ajuste-resultado .valor{font-family:'JetBrains Mono',monospace;font-weight:600;}
   .ajuste-resultado.pos .valor{color:var(--primary);}
   .ajuste-resultado.neg .valor{color:var(--danger);}
+  .folego-linha{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dotted var(--rule,var(--line));font-size:13px;}
+  .folego-linha:last-child{border-bottom:none;}
+  .folego-linha .mes-nome{color:var(--ink-soft);}
+  .folego-linha .mes-nome.atual{color:var(--ink);font-weight:600;}
+  .folego-linha b{font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .folego-linha b.pos{color:var(--primary);}
+  .folego-linha b.neg{color:var(--danger);}
   .btn-simular-destaque{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(255,180,73,.35);background:var(--gold-soft);color:var(--gold);font-weight:600;font-size:13.5px;font-family:inherit;cursor:pointer;margin-bottom:16px;}
   .sim-intro{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;}
 
@@ -331,7 +338,6 @@
     <div class="topbar">
       <h1>Visão geral</h1>
       <div class="periodo">
-        <select id="dashDia"></select>
         <select id="dashMes"></select>
         <select id="dashAno"></select>
         <button id="btnHoje" class="btn-hoje" type="button" title="Voltar para hoje">Hoje</button>
@@ -363,13 +369,9 @@
       <div class="ajuste-resultado" id="ajusteResultado"></div>
     </div>
 
-    <div class="ajuste-box" id="folegoBox" style="display:none;">
-      <p class="ajuste-titulo" id="folegoTitulo">Fôlego até o próximo recebimento</p>
-      <div class="ajuste-linhas">
-        <div><span id="folegoSaldoDiaLabel">Saldo previsto</span><b class="mono" id="folegoSaldoDia">R$ 0,00</b></div>
-      </div>
-      <div class="ajuste-resultado" id="folegoResultado"></div>
-      <p class="chart-hint" style="margin-top:8px;">Olha só até essa data — contas que vencem depois dela (mesmo dentro do mesmo mês) não entram nessa conta.</p>
+    <div class="ajuste-box" id="folegoBox">
+      <p class="ajuste-titulo">Fôlego por mês (sobra ou falta prevista)</p>
+      <div id="folegoLista"></div>
     </div>
 
     <button class="btn-simular-destaque" id="btnAtalhoSimular">🔮 Testar uma decisão antes de gastar</button>
@@ -527,7 +529,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-10-ap</p>
+    <p class="versao-app">Versão do app: 2026-09-10-aq</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1069,64 +1071,20 @@
     }
   }
 
-  function proximaEntradaRecorrente(dataAncoraISO){
-    const ancora = new Date(dataAncoraISO+'T00:00:00');
-    garantirRecorrencias(ancora.getFullYear(), ancora.getMonth());
-    const prox = new Date(ancora.getFullYear(), ancora.getMonth()+1, 1);
-    garantirRecorrencias(prox.getFullYear(), prox.getMonth());
-    const seguinte = new Date(ancora.getFullYear(), ancora.getMonth()+2, 1);
-    garantirRecorrencias(seguinte.getFullYear(), seguinte.getMonth());
-    const candidatas = state.movimentacoes.filter(m => m.tipo==='entrada' && m.data >= dataAncoraISO && (m.recorrente || m.origemRecorrenteId));
-    if(candidatas.length === 0) return null;
-    candidatas.sort((a,b)=>a.data.localeCompare(b.data));
-    const salario = candidatas.find(m=>m.categoria==='Salário');
-    return salario || candidatas[0];
-  }
-
   function renderFolego(){
-    const box = document.getElementById('folegoBox');
-    const dataAncoraISO = isoDate(filtro.ano, filtro.mes, filtro.dia);
-    const saldoAncora = saldoAteODia(filtro.ano, filtro.mes, filtro.dia);
-
-    const prox = proximaEntradaRecorrente(dataAncoraISO);
-    if(!prox){ box.style.display = 'none'; return; }
-    box.style.display = 'block';
-
-    const hojeReal = new Date();
-    const ehHojeDeVerdade = dataAncoraISO === todayISO();
-
-    const ancora = new Date(dataAncoraISO+'T00:00:00');
-    const inicio = new Date(ancora); inicio.setDate(inicio.getDate()+1);
-    const fim = new Date(prox.data+'T00:00:00');
-    let saidasPeriodo = 0, entradasPeriodo = 0;
-    if(inicio <= fim){
-      let d = new Date(inicio);
-      while(d <= fim){
-        const iso = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
-        const t = totaisDoDia(iso);
-        saidasPeriodo += t.saidas + t.diario;
-        entradasPeriodo += t.entradas;
-        d.setDate(d.getDate()+1);
-      }
+    const hoje = new Date();
+    let html = '';
+    for(let i=0; i<6; i++){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+      const ano = d.getFullYear(), mes = d.getMonth();
+      const t = totaisDoMes(ano, mes);
+      const ehAtual = (i===0);
+      const cor = t.economia >= 0 ? 'pos' : 'neg';
+      const rotulo = t.economia >= 0 ? 'Sobra' : 'Falta';
+      html += '<div class="folego-linha"><span class="mes-nome'+(ehAtual?' atual':'')+'">'+MESES[mes]+'/'+ano+(ehAtual?' (atual)':'')+'</span>'+
+        '<b class="'+cor+'">'+rotulo+' '+fmt(Math.abs(t.economia))+'</b></div>';
     }
-    const resultado = saldoAncora + entradasPeriodo - saidasPeriodo;
-    const dataFormatada = formatBR(prox.data);
-    const referencia = ehHojeDeVerdade ? 'seu saldo de hoje' : ('o saldo previsto pra ' + formatBR(dataAncoraISO));
-
-    document.getElementById('folegoSaldoDiaLabel').textContent = 'Saldo previsto pra ' + formatBR(dataAncoraISO) + (ehHojeDeVerdade ? ' (hoje)' : '');
-    const saldoDiaEl = document.getElementById('folegoSaldoDia');
-    saldoDiaEl.textContent = fmt(saldoAncora);
-    saldoDiaEl.className = 'mono ' + (saldoAncora >= 0 ? 'pos' : 'neg');
-
-    document.getElementById('folegoTitulo').textContent = (ehHojeDeVerdade ? 'Fôlego até ' : 'Fôlego de '+formatBR(dataAncoraISO)+' até ') + dataFormatada + ' (' + (prox.descricao || prox.categoria) + ')';
-    const el = document.getElementById('folegoResultado');
-    if(resultado >= 0){
-      el.className = 'ajuste-resultado pos';
-      el.innerHTML = 'Sobra <span class="valor">'+fmt(resultado)+'</span> até lá — os gastos previstos até essa data já estão cobertos por '+referencia+'.';
-    }else{
-      el.className = 'ajuste-resultado neg';
-      el.innerHTML = 'Falta <span class="valor">'+fmt(Math.abs(resultado))+'</span> até lá, considerando '+referencia+'.';
-    }
+    document.getElementById('folegoLista').innerHTML = html;
   }
 
   function renderAjusteFinanceiro(){
@@ -1347,17 +1305,9 @@
 
   function renderDashboard(){
     garantirRecorrencias(filtro.ano, filtro.mes);
-    const dashDia = document.getElementById('dashDia'), dashMes = document.getElementById('dashMes'), dashAno = document.getElementById('dashAno');
+    const dashMes = document.getElementById('dashMes'), dashAno = document.getElementById('dashAno');
     if(!dashMes.dataset.ready){ popularSelectMeses(dashMes); dashMes.dataset.ready='1'; }
     if(!dashAno.dataset.ready){ popularSelectAnos(dashAno, filtro.ano); dashAno.dataset.ready='1'; }
-    const nDias = daysInMonth(filtro.ano, filtro.mes);
-    if(filtro.dia > nDias) filtro.dia = nDias;
-    const diasEsperados = dashDia.dataset.dias;
-    if(diasEsperados != nDias){
-      dashDia.innerHTML = Array.from({length:nDias}, (_,i)=>'<option value="'+(i+1)+'">Dia '+(i+1)+'</option>').join('');
-      dashDia.dataset.dias = nDias;
-    }
-    dashDia.value = filtro.dia;
     dashMes.value = filtro.mes; dashAno.value = filtro.ano;
 
     const t = totaisDoMes(filtro.ano, filtro.mes);
@@ -1403,11 +1353,10 @@
   }
   function iconeAlerta(tipo){ return tipo==='positivo'?'✓':tipo==='alerta-forte'?'⚠':'ℹ'; }
 
-  document.getElementById('dashDia').addEventListener('change', e => { filtro.dia = Number(e.target.value); renderDashboard(); });
-  document.getElementById('dashMes').addEventListener('change', e => { filtro.mes = Number(e.target.value); filtro.dia = 1; renderDashboard(); });
-  document.getElementById('dashAno').addEventListener('change', e => { filtro.ano = Number(e.target.value); filtro.dia = 1; renderDashboard(); });
+  document.getElementById('dashMes').addEventListener('change', e => { filtro.mes = Number(e.target.value); renderDashboard(); });
+  document.getElementById('dashAno').addEventListener('change', e => { filtro.ano = Number(e.target.value); renderDashboard(); });
   document.getElementById('btnHoje').addEventListener('click', () => {
-    filtro.ano = new Date().getFullYear(); filtro.mes = new Date().getMonth(); filtro.dia = new Date().getDate();
+    filtro.ano = new Date().getFullYear(); filtro.mes = new Date().getMonth();
     document.getElementById('dashAno').dataset.ready = '';
     renderDashboard();
   });
