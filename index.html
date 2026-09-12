@@ -227,6 +227,8 @@
   .extrato-range-tabs::-webkit-scrollbar{display:none;}
   .extrato-range-btn{flex:0 0 auto;padding:7px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:color .15s,border-color .15s;}
   .extrato-range-btn.active{background:var(--gradient-primary);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(34,227,178,.22);}
+  .extrato-range-tabs-passado{margin-top:-6px;}
+  .extrato-range-label{flex:0 0 auto;font-size:11px;color:var(--ink-soft);opacity:.65;align-self:center;padding-right:2px;}
   .extrato-dia{background:var(--surface);border-radius:12px;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(255,255,255,.07);}
   .extrato-dia-hoje{border-color:rgba(124,140,255,.5);}
   .extrato-dia-vazio{opacity:.55;}
@@ -508,11 +510,16 @@
 
     <div class="rel-view active" id="rel-extrato">
       <div class="extrato-range-tabs">
-        <button class="extrato-range-btn active" data-range="salario" type="button">Até o salário</button>
-        <button class="extrato-range-btn" data-range="30" type="button">30 dias</button>
+        <button class="extrato-range-btn active" data-range="30" type="button">30 dias</button>
         <button class="extrato-range-btn" data-range="60" type="button">60 dias</button>
         <button class="extrato-range-btn" data-range="90" type="button">90 dias</button>
         <button class="extrato-range-btn" data-range="120" type="button">120 dias</button>
+      </div>
+      <div class="extrato-range-tabs extrato-range-tabs-passado">
+        <span class="extrato-range-label">Anteriores:</span>
+        <button class="extrato-range-btn" data-range="-30" type="button">30 dias</button>
+        <button class="extrato-range-btn" data-range="-60" type="button">60 dias</button>
+        <button class="extrato-range-btn" data-range="-90" type="button">90 dias</button>
       </div>
       <div id="tabelaExtrato"></div>
     </div>
@@ -629,7 +636,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão do app: 2026-09-11-cr</p>
+      <p class="versao-app">Versão do app: 2026-09-11-cu</p>
     </div>
   </section>
 
@@ -2044,7 +2051,7 @@
     return set;
   }
 
-  let extratoRangeAtivo = 'salario';
+  let extratoRangeAtivo = '30';
   document.querySelectorAll('.extrato-range-btn').forEach(btn => btn.addEventListener('click', () => {
     extratoRangeAtivo = btn.dataset.range;
     document.querySelectorAll('.extrato-range-btn').forEach(b => b.classList.toggle('active', b===btn));
@@ -2053,14 +2060,16 @@
 
   function renderExtrato(){
     const hojeISO = todayISO();
-    let isoFim;
-    if(extratoRangeAtivo === 'salario'){
-      isoFim = proximoSalarioApartirDe(hojeISO) || addDiasISO(hojeISO, 30);
+    let isoInicio = hojeISO, isoFim;
+    if(String(extratoRangeAtivo).startsWith('-')){
+      // período anterior a hoje: ex. "-30" = últimos 30 dias antes de hoje (sem incluir hoje, que já aparece nas outras abas)
+      isoFim = addDiasISO(hojeISO, -1);
+      isoInicio = addDiasISO(hojeISO, Number(extratoRangeAtivo));
     }else{
       isoFim = addDiasISO(hojeISO, Number(extratoRangeAtivo));
     }
-    const dias = saldosDiariosIntervalo(hojeISO, isoFim);
-    const diasFolego = diasFolegoNoIntervalo(hojeISO, isoFim);
+    const dias = saldosDiariosIntervalo(isoInicio, isoFim);
+    const diasFolego = diasFolegoNoIntervalo(isoInicio, isoFim);
 
     const linhas = dias.map(d => {
       const diaSemana = DIAS_SEMANA_ABREV[new Date(d.ano, d.mes, d.dia).getDay()];
@@ -2068,11 +2077,13 @@
       if(d.iso === hojeISO) classesExtra.push('extrato-linha-hoje');
       if(diasFolego.has(d.iso)) classesExtra.push('extrato-linha-folego');
       const saldoNeg = d.saldo < 0;
+      // dia com valor de diário DEFINIDO de propósito (mesmo que seja zero) vs dia sem nada configurado ainda
+      const temDiarioDefinido = d.diario > 0 || state.movimentacoes.some(mv => mv.tipo==='diario' && mv.data===d.iso && !mv.recorrenteDiario);
       return '<tr class="'+classesExtra.join(' ')+'">'+
         '<td class="extrato-col-dia">'+String(d.dia).padStart(2,'0')+'/'+String(d.mes+1).padStart(2,'0')+'/'+String(d.ano).slice(-2)+'<small>'+diaSemana+'</small></td>'+
         '<td class="extrato-col-num'+(d.entradas>0 ? ' extrato-entrada' : '')+'" data-iso="'+d.iso+'" data-tipo="entrada">'+(d.entradas>0 ? fmtNum(d.entradas) : '')+'</td>'+
         '<td class="extrato-col-num'+(d.saidas>0 ? ' extrato-saida' : '')+'" data-iso="'+d.iso+'" data-tipo="saida">'+(d.saidas>0 ? fmtNum(d.saidas) : '')+'</td>'+
-        '<td class="extrato-col-num extrato-diario'+(d.diario>0 ? ' extrato-diario-com-valor' : '')+'" data-iso="'+d.iso+'">'+(d.diario>0 ? fmtNum(d.diario) : '<span class="extrato-zerar">def.</span>')+'</td>'+
+        '<td class="extrato-col-num extrato-diario'+(d.diario>0 ? ' extrato-diario-com-valor' : '')+'" data-iso="'+d.iso+'">'+(temDiarioDefinido ? fmtNum(d.diario) : '<span class="extrato-zerar">def.</span>')+'</td>'+
         '<td class="extrato-col-num extrato-saldo'+(saldoNeg?' neg':'')+'">'+fmtNum(d.saldo)+'</td>'+
       '</tr>';
     }).join('');
