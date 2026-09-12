@@ -635,7 +635,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-cp</p>
+    <p class="versao-app">Versão do app: 2026-09-11-cq</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1502,7 +1502,6 @@
     const hoje = new Date();
     const [ay,am] = dataSim.split('-').map(Number);
     const simAno = ay, simMes = am-1;
-    const diaSimulado = Number(dataSim.split('-')[2]);
     const sinal = tipoSim==='entrada' ? 1 : -1;
     const resultados = [];
     let parcelasUsadas = 0;
@@ -1521,9 +1520,8 @@
       const baseline = dias[diaAntes-1].saldo;
 
       // uma parcela recorrente por mês (não acumula as anteriores); gasto único conta uma vez e persiste dali pra frente.
-      // a contagem de quantas parcelas já foram usadas só avança quando a parcela realmente teve impacto naquele corte
+      // sempre desconta no mês em que a parcela foi lançada, não importa o dia exato dentro do mês
       let ocorrencias = 1;
-      if(diferencaMeses === 0 && diaSimulado > diaAntes) ocorrencias = 0;
       if(recorrenteSim && qtdSim && ocorrencias === 1){
         if(parcelasUsadas >= qtdSim) ocorrencias = 0;
         else parcelasUsadas++;
