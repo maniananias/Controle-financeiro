@@ -635,7 +635,7 @@
     </div>
 
     <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-co</p>
+    <p class="versao-app">Versão do app: 2026-09-11-cp</p>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -1480,9 +1480,16 @@
       const diferencaMeses = (ano-simAno)*12 + (mes-simMes);
       if(diferencaMeses < 0) continue; // antes do mês da decisão, não mostra (não tem impacto nenhum)
       const baseline = totaisDoMes(ano,mes).saldoFinal;
-      // uma parcela recorrente por mês (não acumula as anteriores); gasto único conta uma vez e persiste dali pra frente
-      let ocorrencias = 1;
-      if(recorrenteSim && qtdSim && diferencaMeses >= qtdSim) ocorrencias = 0;
+      // este saldo é ACUMULADO (o quanto você tem no total até aquele mês) — diferente do Fôlego mês a mês,
+      // aqui cada parcela paga precisa continuar contando nos meses seguintes, porque o dinheiro que já saiu
+      // não volta: gasto único conta 1x e o efeito persiste; recorrente vai empilhando 1 por mês até o limite
+      // de parcelas (se houver) e, depois que a série acaba, o total gasto fica fixo (não soma mais, mas também não desaparece)
+      let ocorrencias = 0;
+      if(recorrenteSim){
+        ocorrencias = qtdSim ? Math.min(diferencaMeses+1, qtdSim) : diferencaMeses+1;
+      }else{
+        ocorrencias = 1;
+      }
       const sinal = tipoSim==='entrada' ? 1 : -1;
       const impacto = sinal * ocorrencias * valorCents;
       resultados.push({ano, mes, baseline, simulado: baseline+impacto});
