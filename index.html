@@ -600,27 +600,19 @@
     <div class="topbar"><h1>Configurações</h1></div>
 
     <div class="config-section">
-      <h3>🗓️ Controle do ano</h3>
+      <h3>📊 Perfil financeiro</h3>
       <div class="field"><label>Saldo inicial (ano de início: <span id="anoInicialLabel"></span>)</label><input id="cfgSaldoInicial" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Dia de recebimento</label><input id="cfgDiaRecebimento" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 25"></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) em todo o app — Dashboard, Extrato e Simulação. Se o mês tiver menos dias que esse número (ex: fevereiro), usa o último dia do mês.</p>
       <div class="field"><label>Orçamento mensal</label><input id="cfgOrcamento" inputmode="numeric" placeholder="R$ 0,00"></div>
       <div class="field"><label>Saldo mínimo de alerta (opcional)</label><input id="cfgSaldoMinimo" inputmode="numeric" placeholder="R$ 0,00"></div>
     </div>
 
     <div class="config-section">
-      <h3>💼 Dia de recebimento</h3>
-      <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) em todo o app — Dashboard, Extrato e Simulação. Se o mês tiver menos dias que esse número (ex: fevereiro), usa o último dia do mês.</p>
-      <div class="field"><label>Todo dia</label><input id="cfgDiaRecebimento" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 25"></div>
-    </div>
-
-    <div class="config-section">
-      <h3>🎯 Recalibrar saldo</h3>
+      <h3>🎯 Ajustes</h3>
       <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Se o saldo atual do app não bate com o que você tem de verdade na conta hoje, digite o valor real aqui. O app cria um ajuste automático na data de hoje — nada do seu histórico anterior é alterado.</p>
       <div class="field"><label>Qual é o seu saldo real hoje?</label><input id="cfgSaldoReal" inputmode="numeric" placeholder="R$ 0,00"></div>
-      <button class="btn-secundario" id="btnRecalibrarSaldo" style="width:100%;">Recalibrar</button>
-    </div>
-
-    <div class="config-section">
-      <h3>🔁 Gasto diário</h3>
+      <button class="btn-secundario" id="btnRecalibrarSaldo" style="width:100%;margin-bottom:16px;">Recalibrar</button>
       <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">O Gasto Diário agora é lançado direto pela aba Movimentações (toque no + e escolha "🔁 Diário"), pra ficar visível no seu histórico. Marque "usar como valor padrão de todo dia" pra ele repetir sozinho, todo dia, até você trocar por outro.</p>
       <button class="btn-secundario" id="btnIrParaDiario" style="width:100%;">Ver/lançar gasto diário</button>
     </div>
@@ -634,8 +626,11 @@
       <button class="btn-perigo" id="btnZerarTudo">Apagar tudo e começar do zero</button>
     </div>
 
-    <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;margin-top:10px;">🔄 Buscar atualizações</button>
-    <p class="versao-app">Versão do app: 2026-09-11-cq</p>
+    <div class="config-section">
+      <h3>ℹ️ Sobre</h3>
+      <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
+      <p class="versao-app">Versão do app: 2026-09-11-cr</p>
+    </div>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
@@ -2538,6 +2533,10 @@
     const saldoAppHoje = dias[hoje.getDate()-1].saldo;
     const delta = saldoReal - saldoAppHoje;
     if(delta === 0){ mostrarToast('Já está batendo — nenhum ajuste necessário'); return; }
+    const texto = delta > 0
+      ? 'Isso vai criar um ajuste de entrada de '+fmt(delta)+' na data de hoje. Continuar?'
+      : 'Isso vai criar um ajuste de saída de '+fmt(Math.abs(delta))+' na data de hoje. Continuar?';
+    if(!await confirmarApp(texto, 'Recalibrar saldo')) return;
     state.movimentacoes.push({
       id: uid(), data: todayISO(), tipo: delta > 0 ? 'entrada' : 'saida', valor: Math.abs(delta),
       categoria: 'Outros', descricao: 'Ajuste de saldo', formaPagamento: 'Outros',
@@ -2558,6 +2557,7 @@
     renderTelaAtual();
   });
   document.getElementById('btnCarregarExemplo').addEventListener('click', async () => {
+    if(!await confirmarApp('Isso vai adicionar um punhado de lançamentos fictícios (aluguel, mercado, etc.) aos seus dados atuais, só pra você testar o app. Continuar?', 'Carregar dados de exemplo')) return;
     carregarDadosExemplo();
     await salvarMovimentacoes();
     mostrarToast('Dados de exemplo carregados');
