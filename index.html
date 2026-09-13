@@ -73,6 +73,10 @@
 
   .app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;}
   .screen{display:none;padding:calc(18px + env(safe-area-inset-top)) 16px 24px;}
+  @keyframes slideInRight{ from{ transform:translateX(28px); opacity:0; } to{ transform:translateX(0); opacity:1; } }
+  @keyframes slideInLeft{ from{ transform:translateX(-28px); opacity:0; } to{ transform:translateX(0); opacity:1; } }
+  .slide-in-right{ animation:slideInRight .22s ease; }
+  .slide-in-left{ animation:slideInLeft .22s ease; }
   .screen.active{display:block;}
   #screen-dashboard{ padding-top:calc(22px + env(safe-area-inset-top)); }
 
@@ -636,7 +640,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.0.0</p>
+      <p class="versao-app">Versão 1.1.0</p>
     </div>
   </section>
 
@@ -1223,9 +1227,17 @@
 
   // ================= navegação =================
   const NOMES_TELA = { dashboard:'Visão geral', movs:'Movimentações', relatorios:'Relatórios', metas:'Metas', config:'Configurações', simulacao:'Simular decisão' };
+  const SCREEN_ORDER = ['dashboard','movs','relatorios','metas','simulacao','config'];
   function irPara(tela){
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-'+tela).classList.add('active');
+    const atualEl = document.querySelector('.screen.active');
+    const atual = atualEl ? atualEl.id.replace('screen-','') : null;
+    const iAtual = SCREEN_ORDER.indexOf(atual), iNovo = SCREEN_ORDER.indexOf(tela);
+    const direcao = (iAtual!==-1 && iNovo!==-1 && iNovo!==iAtual) ? (iNovo>iAtual?1:-1) : 0;
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active','slide-in-right','slide-in-left'));
+    const novoEl = document.getElementById('screen-'+tela);
+    novoEl.classList.add('active');
+    if(direcao===1) novoEl.classList.add('slide-in-right');
+    else if(direcao===-1) novoEl.classList.add('slide-in-left');
     document.getElementById('labelPaginaAtual').textContent = NOMES_TELA[tela] || tela;
     if(tela === 'dashboard') renderDashboard();
     if(tela === 'movs') renderMovs();
@@ -1980,11 +1992,20 @@
     renderEvolucao();
     renderComparacao();
   }
-  document.querySelectorAll('.rel-tab').forEach(tab => tab.addEventListener('click', () => {
-    document.querySelectorAll('.rel-tab').forEach(t=>t.classList.toggle('active', t===tab));
-    document.querySelectorAll('.rel-view').forEach(v=>v.classList.remove('active'));
-    document.getElementById('rel-'+tab.dataset.rel).classList.add('active');
-  }));
+  const REL_TAB_ORDER = ['extrato','fechamento','categorias','evolucao','comparacao'];
+  function irParaRelTab(nome){
+    const atual = document.querySelector('.rel-tab.active');
+    const atualNome = atual ? atual.dataset.rel : null;
+    const iAtual = REL_TAB_ORDER.indexOf(atualNome), iNovo = REL_TAB_ORDER.indexOf(nome);
+    const direcao = (iAtual!==-1 && iNovo!==-1 && iNovo!==iAtual) ? (iNovo>iAtual?1:-1) : 0;
+    document.querySelectorAll('.rel-tab').forEach(t=>t.classList.toggle('active', t.dataset.rel===nome));
+    document.querySelectorAll('.rel-view').forEach(v=>v.classList.remove('active','slide-in-right','slide-in-left'));
+    const novoEl = document.getElementById('rel-'+nome);
+    novoEl.classList.add('active');
+    if(direcao===1) novoEl.classList.add('slide-in-right');
+    else if(direcao===-1) novoEl.classList.add('slide-in-left');
+  }
+  document.querySelectorAll('.rel-tab').forEach(tab => tab.addEventListener('click', () => irParaRelTab(tab.dataset.rel)));
 
   const DIAS_SEMANA_ABREV = ['dom','seg','ter','qua','qui','sex','sáb'];
   function parseISO(iso){ const [y,m,d] = iso.split('-').map(Number); return {ano:y, mes:m-1, dia:d}; }
@@ -2647,6 +2668,47 @@
   }
   document.getElementById('wComExemplo').addEventListener('click', () => finalizarWizard(true));
   document.getElementById('wSemExemplo').addEventListener('click', () => finalizarWizard(false));
+
+  // ================= navegação por arrasto (swipe) =================
+  // 1 dedo: navega entre as telas principais (mesma ordem do menu ☰). 2 dedos: navega entre as abas de Relatórios.
+  (function(){
+    let inicioX = 0, inicioY = 0, inicioContagem = 0, inicioTempo = 0;
+    const LIMIAR_PX = 60, LIMITE_TEMPO_MS = 800;
+    document.addEventListener('touchstart', (e) => {
+      if(document.body.classList.contains('modal-aberto')) { inicioContagem = 0; return; }
+      inicioContagem = e.touches.length;
+      inicioX = e.touches[0].clientX;
+      inicioY = e.touches[0].clientY;
+      inicioTempo = Date.now();
+    }, {passive:true});
+    document.addEventListener('touchend', (e) => {
+      if(!inicioContagem) return;
+      const contagem = inicioContagem;
+      inicioContagem = 0;
+      if(document.body.classList.contains('modal-aberto')) return;
+      const toque = e.changedTouches[0];
+      const deltaX = toque.clientX - inicioX;
+      const deltaY = toque.clientY - inicioY;
+      if(Date.now() - inicioTempo > LIMITE_TEMPO_MS) return;
+      if(Math.abs(deltaX) < LIMIAR_PX) return;
+      if(Math.abs(deltaX) < Math.abs(deltaY)) return; // gesto mais vertical que horizontal — é scroll, ignora
+
+      if(contagem === 2){
+        const telaAtual = document.querySelector('.screen.active').id.replace('screen-','');
+        if(telaAtual !== 'relatorios') return;
+        const abaAtual = document.querySelector('.rel-tab.active');
+        let i = REL_TAB_ORDER.indexOf(abaAtual ? abaAtual.dataset.rel : REL_TAB_ORDER[0]);
+        i = deltaX < 0 ? Math.min(i+1, REL_TAB_ORDER.length-1) : Math.max(i-1, 0);
+        irParaRelTab(REL_TAB_ORDER[i]);
+      }else if(contagem === 1){
+        const telaAtual = document.querySelector('.screen.active').id.replace('screen-','');
+        let i = SCREEN_ORDER.indexOf(telaAtual);
+        if(i === -1) return;
+        i = deltaX < 0 ? Math.min(i+1, SCREEN_ORDER.length-1) : Math.max(i-1, 0);
+        if(SCREEN_ORDER[i] !== telaAtual) irPara(SCREEN_ORDER[i]);
+      }
+    }, {passive:true});
+  })();
 
   // ================= INIT =================
   (async function init(){
