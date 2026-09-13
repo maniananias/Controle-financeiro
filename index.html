@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<title>Finanças — Painel Pessoal</title>
+<title>Painel de Finanças Pessoal</title>
 
 <!-- Tela cheia ao adicionar à tela de início -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -585,7 +585,7 @@
   <!-- ===== SIMULAÇÃO ===== -->
   <section class="screen" id="screen-simulacao">
     <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">🔮</span></button><h1>Simular decisão</h1></div><button class="btn-fechar-tela" id="btnFecharSimulacao" type="button">✕ Fechar</button></div>
-    <p class="sim-intro">Antes de gastar (ou receber) alguma coisa, teste aqui o impacto real nos próximos 12 meses — nada é lançado até você confirmar.</p>
+    <p class="sim-intro">Antes de gastar (ou receber) alguma coisa, teste aqui o impacto real nos próximos 12 meses. Nada é lançado até você confirmar.</p>
 
     <div class="tipo-toggle">
       <button type="button" id="simBtnEntrada">↑ Entrada</button>
@@ -624,18 +624,24 @@
       <h3>📊 Perfil financeiro</h3>
       <div class="field"><label>Saldo inicial (ano de início: <span id="anoInicialLabel"></span>)</label><input id="cfgSaldoInicial" inputmode="numeric" placeholder="R$ 0,00"></div>
       <div class="field"><label>Dia de recebimento</label><input id="cfgDiaRecebimento" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 25"></div>
-      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) em todo o app — Dashboard, Extrato e Simulação. Se o mês tiver menos dias que esse número (ex: fevereiro), usa o último dia do mês.</p>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) em todo o app: Dashboard, Extrato e Simulação. Se o mês tiver menos dias que esse número (ex: fevereiro), usa o último dia do mês.</p>
       <div class="field"><label>Orçamento mensal</label><input id="cfgOrcamento" inputmode="numeric" placeholder="R$ 0,00"></div>
       <div class="field"><label>Saldo mínimo de alerta (opcional)</label><input id="cfgSaldoMinimo" inputmode="numeric" placeholder="R$ 0,00"></div>
     </div>
 
     <div class="config-section">
       <h3>🎯 Ajustes</h3>
-      <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Se o saldo atual do app não bate com o que você tem de verdade na conta hoje, digite o valor real aqui. O app cria um ajuste automático na data de hoje — nada do seu histórico anterior é alterado.</p>
+      <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Se o saldo atual do app não bate com o que você tem de verdade na conta hoje, digite o valor real aqui. O app cria um ajuste automático na data de hoje. Nada do seu histórico anterior é alterado.</p>
       <div class="field"><label>Qual é o seu saldo real hoje?</label><input id="cfgSaldoReal" inputmode="numeric" placeholder="R$ 0,00"></div>
       <button class="btn-secundario" id="btnRecalibrarSaldo" style="width:100%;margin-bottom:16px;">Recalibrar</button>
-      <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">O Gasto Diário agora é lançado direto pela aba Movimentações (toque no + e escolha "🔁 Diário"), pra ficar visível no seu histórico. Marque "usar como valor padrão de todo dia" pra ele repetir sozinho, todo dia, até você trocar por outro.</p>
-      <button class="btn-secundario" id="btnIrParaDiario" style="width:100%;">Ver/lançar gasto diário</button>
+      <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Esse é o valor que se repete sozinho todo dia, a partir de hoje, até você trocar de novo. Dias passados não mudam — só quer ajustar um dia específico? Use o Extrato.</p>
+      <div class="field"><label>Gasto diário padrão</label>
+        <div class="valor-soma-row">
+          <input id="cfgDiarioValor" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="cfgDiarioValor" title="Somar outro valor (ex: 20 + 10)">+</button>
+        </div>
+      </div>
+      <button class="btn-secundario" id="btnSalvarDiarioPadrao" style="width:100%;">Salvar novo padrão</button>
     </div>
 
     <div class="config-section">
@@ -650,14 +656,14 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.3.0</p>
+      <p class="versao-app">Versão 1.4.0</p>
     </div>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
   <nav class="bottom-nav">
     <button class="nav-menu-btn nav-menu-btn-primario" id="fabNovaMov" style="display:none;"><span class="ico">➕</span>Nova</button>
-    <button class="nav-menu-btn nav-menu-btn-diario" id="fabDiarioRapido"><span class="ico">📅</span>Diário de hoje</button>
+    <button class="nav-menu-btn nav-menu-btn-diario" id="fabDiarioRapido"><span class="ico">🔁</span>Hoje</button>
   </nav>
 
   <!-- ===== MODAL GRÁFICO EXPANDIDO ===== -->
@@ -740,13 +746,13 @@
       <button class="modal-close" data-close-modal type="button">✕</button>
       <h2 class="modal-title" id="diaDiarioTitulo">Diário do dia</h2>
       <input type="hidden" id="diaDiarioIso">
-      <div class="field"><label>Gasto diário nesse dia</label>
+      <div class="field"><label>Gasto nesse dia</label>
         <div class="valor-soma-row">
           <input id="diaDiarioValor" inputmode="numeric" placeholder="R$ 0,00">
           <button type="button" class="btn-somar" data-somar="diaDiarioValor" title="Somar outro valor (ex: 20 + 10)">+</button>
         </div>
       </div>
-      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Isso muda só esse dia — os outros continuam com o valor padrão.</p>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Isso muda só esse dia. Os outros continuam com o valor padrão.</p>
       <div class="modal-acoes">
         <button class="btn-secundario" id="btnDiaDiarioRemover" style="display:none;">Voltar ao padrão</button>
         <button class="btn-primario" id="btnDiaDiarioSalvar">Salvar</button>
@@ -1392,7 +1398,7 @@
       el.innerHTML = 'Sobra <span class="valor">'+fmt(resultado)+'</span> por mês, no ritmo atual.';
     }else{
       el.className = 'ajuste-resultado neg';
-      el.innerHTML = 'Falta <span class="valor">'+fmt(Math.abs(resultado))+'</span> por mês — é o quanto você precisa cortar de gasto (ou aumentar de entrada) pra fechar no zero a zero.';
+      el.innerHTML = 'Falta <span class="valor">'+fmt(Math.abs(resultado))+'</span> por mês: é o quanto você precisa cortar de gasto (ou aumentar de entrada) pra fechar no zero a zero.';
     }
   }
 
@@ -1469,7 +1475,7 @@
   }
 
   function abrirGraficoExpandido(tipo){
-    document.getElementById('tituloGraficoExpandido').textContent = tipo==='saldo' ? 'Evolução do saldo — '+MESES[filtro.mes]+' de '+filtro.ano : 'Entradas, saídas e economia — últimos meses e projeção';
+    document.getElementById('tituloGraficoExpandido').textContent = tipo==='saldo' ? 'Evolução do saldo em '+MESES[filtro.mes]+' de '+filtro.ano : 'Entradas, saídas e economia: últimos meses e projeção';
     const ctx = document.getElementById('chartExpandidoCanvas').getContext('2d');
     if(tipo==='saldo') renderChartSaldo(ctx, true); else renderChartComparativo(ctx, true);
     document.getElementById('hintGraficoExpandido').textContent = (tipo==='comparativo' && ultimaComparativoTemProjecao) ? 'Barras mais claras = meses futuros, calculados com as recorrências já cadastradas (ainda pode mudar)' : '';
@@ -1590,15 +1596,15 @@
     }else if(mesesQueApertam.length === 0){
       resumo.className = 'sim-veredito pos';
       resumo.innerHTML = limiteSeguranca > 0
-        ? '✅ <b>Sim, dá pra pagar</b> — seu saldo continua acima da reserva mínima ('+fmt(limiteSeguranca)+') em todos os meses até o salário, mesmo com essa decisão.'
-        : '✅ <b>Sim, dá pra pagar</b> — seu saldo continua positivo em todos os meses até o salário, mesmo com essa decisão.';
+        ? '✅ <b>Sim, dá pra pagar</b>. Seu saldo continua acima da reserva mínima ('+fmt(limiteSeguranca)+') em todos os meses até o salário, mesmo com essa decisão.'
+        : '✅ <b>Sim, dá pra pagar</b>. Seu saldo continua positivo em todos os meses até o salário, mesmo com essa decisão.';
     }else{
       const primeiro = mesesQueApertam[0];
       const nomeMes = MESES[primeiro.mes]+'/'+primeiro.ano;
       resumo.className = 'sim-veredito neg';
       resumo.innerHTML = primeiro.simulado < 0
-        ? '⚠️ <b>Não, isso vai apertar</b> — em '+nomeMes+' seu saldo fica negativo (<span class="valor">'+fmt(Math.abs(primeiro.simulado))+'</span> no vermelho) por causa dessa decisão.'
-        : '⚠️ <b>Não, isso vai apertar</b> — em '+nomeMes+' seu saldo fica abaixo da reserva mínima de '+fmt(limiteSeguranca)+' (sobra só <span class="valor">'+fmt(primeiro.simulado)+'</span>) por causa dessa decisão.';
+        ? '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeMes+' seu saldo fica negativo (<span class="valor">'+fmt(Math.abs(primeiro.simulado))+'</span> no vermelho) por causa dessa decisão.'
+        : '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeMes+' seu saldo fica abaixo da reserva mínima de '+fmt(limiteSeguranca)+' (sobra só <span class="valor">'+fmt(primeiro.simulado)+'</span>) por causa dessa decisão.';
     }
 
     const folegoBox = document.getElementById('simFolegoBox');
@@ -1818,7 +1824,7 @@
     if(lista.length === 0){
       const semNadaAindaNoTotal = state.movimentacoes.length === 0;
       el.innerHTML = '<div class="empty-state"><span class="ico-grande">🧾</span>'+
-        (semNadaAindaNoTotal ? 'Ainda não há nada por aqui. Toque no + para lançar sua primeira movimentação.' : 'Nada por aqui com esses filtros — tenta ajustar um pouco.')+
+        (semNadaAindaNoTotal ? 'Ainda não há nada por aqui. Toque no + para lançar sua primeira movimentação.' : 'Nada por aqui com esses filtros. Tenta ajustar um pouco.')+
         '</div>';
       return;
     }
@@ -2162,7 +2168,13 @@
   bindMoney(document.getElementById('diaDiarioValor'));
   function abrirEditorDiarioDia(iso){
     const [y,m,d] = iso.split('-').map(Number);
-    document.getElementById('diaDiarioTitulo').textContent = 'Diário de ' + String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+y;
+    const tituloEl = document.getElementById('diaDiarioTitulo');
+    if(iso === todayISO()){
+      tituloEl.style.display = 'none';
+    }else{
+      tituloEl.style.display = 'block';
+      tituloEl.textContent = 'Diário de ' + String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+y;
+    }
     document.getElementById('diaDiarioIso').value = iso;
     const avulso = state.movimentacoes.find(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
     const inputValor = document.getElementById('diaDiarioValor');
@@ -2290,10 +2302,10 @@
     const hintEl = document.getElementById('evolucaoHint');
     if(inicio > 0){
       hintEl.style.display = 'block';
-      hintEl.textContent = 'Ocultando ' + inicio + ' meses sem lançamento — toque para mostrar todos ↓';
+      hintEl.textContent = 'Ocultando ' + inicio + ' meses sem lançamento. Toque para mostrar todos ↓';
     }else if(evolucaoMostrarTudo && primeiroComDado > 0){
       hintEl.style.display = 'block';
-      hintEl.textContent = 'Mostrando todos os 12 meses — toque para ocultar os vazios ↑';
+      hintEl.textContent = 'Mostrando todos os 12 meses. Toque para ocultar os vazios ↑';
     }else{
       hintEl.style.display = 'none';
     }
@@ -2471,12 +2483,19 @@
   });
 
   // ================= CONFIGURAÇÕES =================
+  function valorDiarioPadraoAtual(){
+    const origens = state.movimentacoes.filter(m => m.tipo==='diario' && m.recorrenteDiario);
+    if(origens.length === 0) return 0;
+    origens.sort((a,b) => b.data.localeCompare(a.data));
+    return origens[0].valor;
+  }
   function renderConfig(){
     document.getElementById('anoInicialLabel').textContent = state.config.anoInicial;
     setMoneyValue(document.getElementById('cfgSaldoInicial'), state.config.saldoInicial);
     setMoneyValue(document.getElementById('cfgOrcamento'), state.config.orcamentoMensal);
     setMoneyValue(document.getElementById('cfgSaldoMinimo'), state.config.saldoMinimo);
     document.getElementById('cfgDiaRecebimento').value = state.config.diaRecebimento || '';
+    setMoneyValue(document.getElementById('cfgDiarioValor'), valorDiarioPadraoAtual());
   }
   bindMoney(document.getElementById('cfgSaldoInicial'), c => { state.config.saldoInicial = c; limparCache(); salvarConfig(); });
   bindMoney(document.getElementById('cfgOrcamento'), c => { state.config.orcamentoMensal = c; salvarConfig(); });
@@ -2487,12 +2506,21 @@
     e.target.value = state.config.diaRecebimento || '';
   });
   bindMoney(document.getElementById('cfgSaldoReal'));
-  document.getElementById('btnIrParaDiario').addEventListener('click', () => {
-    irPara('movs');
-    periodoAtivo = 'Mês atual';
-    document.querySelectorAll('#chipsPeriodo .chip').forEach(c => c.classList.toggle('active', c.dataset.p === periodoAtivo));
-    document.getElementById('filtroTipo').value = 'diario';
-    renderListaMovs();
+  bindMoney(document.getElementById('cfgDiarioValor'));
+  document.getElementById('btnSalvarDiarioPadrao').addEventListener('click', async () => {
+    const novoValor = centsFromInput(document.getElementById('cfgDiarioValor'));
+    const atual = valorDiarioPadraoAtual();
+    if(novoValor === atual){ mostrarToast('Já está configurado assim'); return; }
+    if(!await confirmarApp('Isso muda seu gasto diário padrão pra '+fmt(novoValor)+' a partir de hoje. Dias anteriores continuam com o valor de antes. Continuar?', 'Gasto diário padrão')) return;
+    state.movimentacoes.push({
+      id: uid(), data: todayISO(), tipo:'diario', valor: novoValor, categoria:'Outros',
+      descricao:'Novo padrão diário', formaPagamento:'Dinheiro',
+      recorrente:false, recorrenteDiario:true, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm:new Date().toISOString()
+    });
+    limparCache();
+    await salvarMovimentacoes();
+    mostrarToast('Gasto diário padrão atualizado');
+    renderTelaAtual();
   });
 
   document.getElementById('btnExportarBackup').addEventListener('click', async () => {
@@ -2538,9 +2566,9 @@
       const w = window.open('', '_blank');
       if(w){
         w.document.write('<title>Backup Finanças</title><body style="font-family:monospace;white-space:pre-wrap;padding:16px;font-size:12px;">'+conteudo.replace(/</g,'&lt;')+'</body>');
-        mostrarToast('Abriu numa aba nova — selecione o texto e copie, ou use Compartilhar');
+        mostrarToast('Abriu numa aba nova. Selecione o texto e copie, ou use Compartilhar');
       }else{
-        mostrarToast('Backup gerado — se não baixou, tente novamente');
+        mostrarToast('Backup gerado. Se não baixou, tente novamente');
       }
     }else{
       mostrarToast('Backup baixado');
@@ -2586,7 +2614,7 @@
     const dias = saldosDiariosDoMes(hoje.getFullYear(), hoje.getMonth());
     const saldoAppHoje = dias[hoje.getDate()-1].saldo;
     const delta = saldoReal - saldoAppHoje;
-    if(delta === 0){ mostrarToast('Já está batendo — nenhum ajuste necessário'); return; }
+    if(delta === 0){ mostrarToast('Já está batendo, nenhum ajuste necessário'); return; }
     const texto = delta > 0
       ? 'Isso vai criar um ajuste de entrada de '+fmt(delta)+' na data de hoje. Continuar?'
       : 'Isso vai criar um ajuste de saída de '+fmt(Math.abs(delta))+' na data de hoje. Continuar?';
@@ -2607,7 +2635,7 @@
     state.movimentacoes = []; state.metas = []; state.diarioOverrides = {};
     limparCache();
     await salvarMovimentacoes(); await salvarMetas(); await salvarOverrides();
-    mostrarToast('Tudo apagado — pronto pra recomeçar');
+    mostrarToast('Tudo apagado, pronto pra recomeçar');
     renderTelaAtual();
   });
   document.getElementById('btnCarregarExemplo').addEventListener('click', async () => {
