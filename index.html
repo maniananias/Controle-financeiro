@@ -363,9 +363,10 @@
     padding:9px 8px;white-space:nowrap;overflow:hidden;
   }
   .nav-menu-btn .ico{font-size:15px;flex:0 0 auto;}
-  .nav-menu-btn #labelPaginaAtual{overflow:hidden;text-overflow:ellipsis;}
-  .nav-menu-btn .chevron{font-size:9px;opacity:.6;flex:0 0 auto;}
   .nav-menu-btn-primario{background:var(--gradient-primary);border:none;color:#fff;box-shadow:0 6px 16px rgba(34,227,178,.25);}
+  .nav-menu-btn-diario{background:var(--gold);border:none;color:var(--bg);box-shadow:0 6px 16px rgba(255,180,73,.3);}
+  .topbar-titulo{display:flex;align-items:center;gap:10px;}
+  .btn-menu-topo{flex:0 0 auto;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--surface-alt);border:1px solid var(--line);border-radius:11px;font-size:18px;cursor:pointer;}
 
   .mais-grid{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
   .mais-item{display:flex;align-items:center;gap:12px;padding:15px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--line);color:var(--ink);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;text-align:left;}
@@ -394,6 +395,15 @@
   .btn-excluir{padding:13px 16px;border-radius:12px;border:1px solid var(--danger);background:var(--danger-soft);color:var(--danger);font-weight:600;font-size:13.5px;cursor:pointer;}
   .modal-sheet{position:relative;}
   .modal-close{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;background:var(--surface-alt);border:none;font-size:14px;color:var(--ink-soft);cursor:pointer;}
+  /* painel do menu de navegação: entra deslizando da esquerda, de onde está o ícone — feito pra parecer parte da própria tela */
+  @keyframes slideInDrawer{ from{ transform:translateX(-100%); } to{ transform:translateX(0); } }
+  .modal-menu-topo{align-items:stretch;justify-content:flex-start;padding:0;}
+  .modal-menu-topo .modal-sheet{
+    width:78%;max-width:320px;height:100%;border-radius:0 20px 20px 0;
+    padding-top:calc(20px + env(safe-area-inset-top));
+    box-shadow:8px 0 32px rgba(0,0,0,.4);
+    animation:slideInDrawer .24s ease;
+  }
 
   /* ---- toast ---- */
   .toast{
@@ -425,7 +435,7 @@
   <!-- ===== VISÃO GERAL ===== -->
   <section class="screen active" id="screen-dashboard">
     <div class="topbar">
-      <h1>Visão geral</h1>
+      <div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">🏠</span></button><h1>Visão geral</h1></div>
       <div class="periodo">
         <button id="btnHoje" class="btn-hoje" type="button" title="Voltar para hoje">Hoje</button>
         <select id="dashDia"></select>
@@ -486,7 +496,7 @@
 
   <!-- ===== MOVIMENTAÇÕES ===== -->
   <section class="screen" id="screen-movs">
-    <div class="topbar"><h1>Movimentações</h1></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">💰</span></button><h1>Movimentações</h1></div></div>
     <p class="hoje-hint" id="hojeHint"></p>
     <div class="search-row"><input type="text" id="buscaMov" placeholder="Buscar por categoria ou descrição"></div>
     <div class="chips" id="chipsPeriodo"></div>
@@ -503,7 +513,7 @@
 
   <!-- ===== RELATÓRIOS ===== -->
   <section class="screen" id="screen-relatorios">
-    <div class="topbar"><h1>Relatórios</h1></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">📊</span></button><h1>Relatórios</h1></div></div>
     <div class="rel-tabs">
       <div class="rel-tab active" data-rel="extrato">Extrato</div>
       <div class="rel-tab" data-rel="fechamento">Fechamento</div>
@@ -568,13 +578,13 @@
 
   <!-- ===== METAS ===== -->
   <section class="screen" id="screen-metas">
-    <div class="topbar"><h1>Metas financeiras</h1><button class="btn-secundario" id="btnNovaMeta" style="flex:none;">+ Meta</button></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">🎯</span></button><h1>Metas financeiras</h1></div><button class="btn-secundario" id="btnNovaMeta" style="flex:none;">+ Meta</button></div>
     <div id="listaMetas"></div>
   </section>
 
   <!-- ===== SIMULAÇÃO ===== -->
   <section class="screen" id="screen-simulacao">
-    <div class="topbar"><h1>Simular decisão</h1><button class="btn-fechar-tela" id="btnFecharSimulacao" type="button">✕ Fechar</button></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">🔮</span></button><h1>Simular decisão</h1></div><button class="btn-fechar-tela" id="btnFecharSimulacao" type="button">✕ Fechar</button></div>
     <p class="sim-intro">Antes de gastar (ou receber) alguma coisa, teste aqui o impacto real nos próximos 12 meses — nada é lançado até você confirmar.</p>
 
     <div class="tipo-toggle">
@@ -608,7 +618,7 @@
 
   <!-- ===== CONFIGURAÇÕES ===== -->
   <section class="screen" id="screen-config">
-    <div class="topbar"><h1>Configurações</h1></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">⚙️</span></button><h1>Configurações</h1></div></div>
 
     <div class="config-section">
       <h3>📊 Perfil financeiro</h3>
@@ -640,14 +650,14 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.1.0</p>
+      <p class="versao-app">Versão 1.3.0</p>
     </div>
   </section>
 
   <!-- ===== NAV INFERIOR ===== -->
   <nav class="bottom-nav">
-    <button class="nav-menu-btn" id="btnAbrirMenu"><span class="ico">☰</span><span id="labelPaginaAtual">Visão geral</span><span class="chevron">▾</span></button>
-    <button class="nav-menu-btn nav-menu-btn-primario" id="fabNovaMov"><span class="ico">➕</span>Nova</button>
+    <button class="nav-menu-btn nav-menu-btn-primario" id="fabNovaMov" style="display:none;"><span class="ico">➕</span>Nova</button>
+    <button class="nav-menu-btn nav-menu-btn-diario" id="fabDiarioRapido"><span class="ico">📅</span>Diário de hoje</button>
   </nav>
 
   <!-- ===== MODAL GRÁFICO EXPANDIDO ===== -->
@@ -662,9 +672,8 @@
   </div>
 
   <!-- ===== MODAL MENU DE NAVEGAÇÃO ===== -->
-  <div class="modal-overlay" id="modalMais">
+  <div class="modal-overlay modal-menu-topo" id="modalMais">
     <div class="modal-sheet">
-      <div class="modal-handle"></div>
       <button class="modal-close" data-close-modal type="button">✕</button>
       <h2 class="modal-title">Ir para</h2>
       <div class="mais-grid">
@@ -1227,7 +1236,10 @@
 
   // ================= navegação =================
   const NOMES_TELA = { dashboard:'Visão geral', movs:'Movimentações', relatorios:'Relatórios', metas:'Metas', config:'Configurações', simulacao:'Simular decisão' };
+  const ICONES_TELA = { dashboard:'🏠', movs:'💰', relatorios:'📊', metas:'🎯', config:'⚙️', simulacao:'🔮' };
   const SCREEN_ORDER = ['dashboard','movs','relatorios','metas','simulacao','config'];
+  const TELAS_COM_BOTAO_NOVA = ['movs','metas'];
+  const TELAS_COM_BOTAO_DIARIO = ['dashboard'];
   function irPara(tela){
     const atualEl = document.querySelector('.screen.active');
     const atual = atualEl ? atualEl.id.replace('screen-','') : null;
@@ -1238,7 +1250,12 @@
     novoEl.classList.add('active');
     if(direcao===1) novoEl.classList.add('slide-in-right');
     else if(direcao===-1) novoEl.classList.add('slide-in-left');
-    document.getElementById('labelPaginaAtual').textContent = NOMES_TELA[tela] || tela;
+    document.querySelectorAll('.icone-pagina-atual').forEach(el => el.textContent = ICONES_TELA[tela] || '☰');
+    const mostraNova = TELAS_COM_BOTAO_NOVA.includes(tela);
+    const mostraDiario = TELAS_COM_BOTAO_DIARIO.includes(tela);
+    document.getElementById('fabNovaMov').style.display = mostraNova ? 'flex' : 'none';
+    document.getElementById('fabDiarioRapido').style.display = mostraDiario ? 'flex' : 'none';
+    document.querySelector('.bottom-nav').style.display = (mostraNova || mostraDiario) ? 'flex' : 'none';
     if(tela === 'dashboard') renderDashboard();
     if(tela === 'movs') renderMovs();
     if(tela === 'relatorios') renderRelatorios();
@@ -1248,11 +1265,12 @@
   }
   document.getElementById('btnAtalhoSimular').addEventListener('click', () => irPara('simulacao'));
   document.getElementById('btnFecharSimulacao').addEventListener('click', () => irPara('dashboard'));
-  document.getElementById('btnAbrirMenu').addEventListener('click', () => {
+  function abrirMenuPrincipal(){
     const atual = document.querySelector('.screen.active').id.replace('screen-','');
     document.querySelectorAll('.mais-item').forEach(b => b.classList.toggle('mais-item-atual', b.dataset.screen === atual));
     document.getElementById('modalMais').classList.add('show');
-  });
+  }
+  document.querySelectorAll('.btn-menu-topo').forEach(b => b.addEventListener('click', abrirMenuPrincipal));
   document.querySelectorAll('.mais-item').forEach(b => b.addEventListener('click', () => {
     document.getElementById('modalMais').classList.remove('show');
     irPara(b.dataset.screen);
@@ -1717,9 +1735,10 @@
     renderDashboard();
   });
 
-  // ---- toque no cartão "Gastos diários" abre a edição rápida do diário de hoje ----
+  // ---- toque no cartão "Gastos diários" leva pro Extrato, em Relatórios ----
   document.getElementById('cardDiarioBtn').addEventListener('click', () => {
-    abrirEditorDiarioDia(todayISO());
+    irPara('relatorios');
+    irParaRelTab('extrato');
   });
 
   // ================= MOVIMENTAÇÕES =================
@@ -1872,6 +1891,7 @@
       const m = state.movimentacoes.find(x=>x.id===id);
       document.getElementById('movId').value = m.id;
       setTipoModal(m.tipo, false);
+      document.getElementById('btnTipoDiario').style.display = m.tipo==='diario' ? 'block' : 'none';
       document.getElementById('movData').value = m.data;
       setMoneyValue(document.getElementById('movValor'), m.valor);
       document.getElementById('movCategoria').value = m.categoria;
@@ -1888,6 +1908,7 @@
     }else{
       document.getElementById('movId').value = '';
       setTipoModal('saida', false);
+      document.getElementById('btnTipoDiario').style.display = 'none';
       document.getElementById('movData').value = todayISO();
       document.getElementById('movValor').value = '';
       document.getElementById('movDescricao').value = '';
@@ -1903,6 +1924,7 @@
   }
   bindMoney(document.getElementById('movValor'));
   document.getElementById('fabNovaMov').addEventListener('click', () => abrirModalMov(null));
+  document.getElementById('fabDiarioRapido').addEventListener('click', () => abrirEditorDiarioDia(todayISO()));
   document.getElementById('movRecorrente').addEventListener('change', (e) => {
     document.getElementById('campoRecorrenteAte').style.display = e.target.checked ? 'block' : 'none';
   });
@@ -2670,12 +2692,13 @@
   document.getElementById('wSemExemplo').addEventListener('click', () => finalizarWizard(false));
 
   // ================= navegação por arrasto (swipe) =================
-  // 1 dedo: navega entre as telas principais (mesma ordem do menu ☰). 2 dedos: navega entre as abas de Relatórios.
+  // 1 dedo: navega entre as telas principais (mesma ordem do menu ☰), ou fecha o menu se ele estiver aberto. 2 dedos: navega entre as abas de Relatórios.
   (function(){
     let inicioX = 0, inicioY = 0, inicioContagem = 0, inicioTempo = 0;
     const LIMIAR_PX = 60, LIMITE_TEMPO_MS = 800;
+    function menuAberto(){ return document.getElementById('modalMais').classList.contains('show'); }
     document.addEventListener('touchstart', (e) => {
-      if(document.body.classList.contains('modal-aberto')) { inicioContagem = 0; return; }
+      if(document.body.classList.contains('modal-aberto') && !menuAberto()) { inicioContagem = 0; return; }
       inicioContagem = e.touches.length;
       inicioX = e.touches[0].clientX;
       inicioY = e.touches[0].clientY;
@@ -2685,13 +2708,19 @@
       if(!inicioContagem) return;
       const contagem = inicioContagem;
       inicioContagem = 0;
-      if(document.body.classList.contains('modal-aberto')) return;
       const toque = e.changedTouches[0];
       const deltaX = toque.clientX - inicioX;
       const deltaY = toque.clientY - inicioY;
       if(Date.now() - inicioTempo > LIMITE_TEMPO_MS) return;
       if(Math.abs(deltaX) < LIMIAR_PX) return;
       if(Math.abs(deltaX) < Math.abs(deltaY)) return; // gesto mais vertical que horizontal — é scroll, ignora
+
+      // com o menu aberto, só o gesto de fechar (arrastar pra esquerda) importa — o resto do corpo fica travado
+      if(menuAberto()){
+        if(contagem === 1 && deltaX < 0) document.getElementById('modalMais').classList.remove('show');
+        return;
+      }
+      if(document.body.classList.contains('modal-aberto')) return; // outro modal aberto — não navega
 
       if(contagem === 2){
         const telaAtual = document.querySelector('.screen.active').id.replace('screen-','');
@@ -2702,6 +2731,11 @@
         irParaRelTab(REL_TAB_ORDER[i]);
       }else if(contagem === 1){
         const telaAtual = document.querySelector('.screen.active').id.replace('screen-','');
+        // na Visão geral, arrastar pra direita abre o menu; pra esquerda segue a navegação normal
+        if(telaAtual === 'dashboard' && deltaX > 0){
+          abrirMenuPrincipal();
+          return;
+        }
         let i = SCREEN_ORDER.indexOf(telaAtual);
         if(i === -1) return;
         i = deltaX < 0 ? Math.min(i+1, SCREEN_ORDER.length-1) : Math.max(i-1, 0);
