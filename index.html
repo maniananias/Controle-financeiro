@@ -636,7 +636,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão do app: 2026-09-11-cv</p>
+      <p class="versao-app">Versão do app: 2026-09-12-cw</p>
     </div>
   </section>
 
@@ -1335,10 +1335,10 @@
   }
 
   function renderAjusteFinanceiro(){
-    const hoje = new Date();
+    // acompanha o filtro do Dashboard: os 3 meses reais ANTES do mês que está sendo visto (não inclui o próprio mês filtrado)
     let janela = [];
-    for(let i=-11; i<=0; i++){
-      const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+    for(let i=-12; i<=-1; i++){
+      const d = new Date(filtro.ano, filtro.mes+i, 1);
       janela.push({ano:d.getFullYear(), mes:d.getMonth()});
     }
     while(janela.length > 1){
