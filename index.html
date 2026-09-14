@@ -435,7 +435,7 @@
   <!-- ===== VISÃO GERAL ===== -->
   <section class="screen active" id="screen-dashboard">
     <div class="topbar">
-      <div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">🏠</span></button><h1>Visão geral</h1></div>
+      <div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Visão geral</h1></div>
       <div class="periodo">
         <button id="btnHoje" class="btn-hoje" type="button" title="Voltar para hoje">Hoje</button>
         <select id="dashDia"></select>
@@ -496,7 +496,7 @@
 
   <!-- ===== MOVIMENTAÇÕES ===== -->
   <section class="screen" id="screen-movs">
-    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">💰</span></button><h1>Movimentações</h1></div></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Movimentações</h1></div></div>
     <p class="hoje-hint" id="hojeHint"></p>
     <div class="search-row"><input type="text" id="buscaMov" placeholder="Buscar por categoria ou descrição"></div>
     <div class="chips" id="chipsPeriodo"></div>
@@ -513,7 +513,7 @@
 
   <!-- ===== RELATÓRIOS ===== -->
   <section class="screen" id="screen-relatorios">
-    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">📊</span></button><h1>Relatórios</h1></div></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Relatórios</h1></div></div>
     <div class="rel-tabs">
       <div class="rel-tab active" data-rel="extrato">Extrato</div>
       <div class="rel-tab" data-rel="fechamento">Fechamento</div>
@@ -578,13 +578,13 @@
 
   <!-- ===== METAS ===== -->
   <section class="screen" id="screen-metas">
-    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">🎯</span></button><h1>Metas financeiras</h1></div><button class="btn-secundario" id="btnNovaMeta" style="flex:none;">+ Meta</button></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Metas financeiras</h1></div><button class="btn-secundario" id="btnNovaMeta" style="flex:none;">+ Meta</button></div>
     <div id="listaMetas"></div>
   </section>
 
   <!-- ===== SIMULAÇÃO ===== -->
   <section class="screen" id="screen-simulacao">
-    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">🔮</span></button><h1>Simular decisão</h1></div><button class="btn-fechar-tela" id="btnFecharSimulacao" type="button">✕ Fechar</button></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Simular decisão</h1></div><button class="btn-fechar-tela" id="btnFecharSimulacao" type="button">✕ Fechar</button></div>
     <p class="sim-intro">Antes de gastar (ou receber) alguma coisa, teste aqui o impacto real nos próximos 12 meses. Nada é lançado até você confirmar.</p>
 
     <div class="tipo-toggle">
@@ -618,7 +618,7 @@
 
   <!-- ===== CONFIGURAÇÕES ===== -->
   <section class="screen" id="screen-config">
-    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">⚙️</span></button><h1>Configurações</h1></div></div>
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Configurações</h1></div></div>
 
     <div class="config-section">
       <h3>📊 Perfil financeiro</h3>
@@ -656,7 +656,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.4.2</p>
+      <p class="versao-app">Versão 1.4.3</p>
     </div>
   </section>
 
@@ -1256,7 +1256,7 @@
     novoEl.classList.add('active');
     if(direcao===1) novoEl.classList.add('slide-in-right');
     else if(direcao===-1) novoEl.classList.add('slide-in-left');
-    document.querySelectorAll('.icone-pagina-atual').forEach(el => el.textContent = ICONES_TELA[tela] || '☰');
+    document.querySelectorAll('.icone-pagina-atual').forEach(el => el.textContent = '☰');
     const mostraNova = TELAS_COM_BOTAO_NOVA.includes(tela);
     const mostraDiario = TELAS_COM_BOTAO_DIARIO.includes(tela);
     document.getElementById('fabNovaMov').style.display = mostraNova ? 'flex' : 'none';
