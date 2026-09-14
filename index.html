@@ -656,7 +656,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.4.3</p>
+      <p class="versao-app">Versão 1.4.4</p>
     </div>
   </section>
 
@@ -1241,8 +1241,6 @@
   new MutationObserver(atualizarTravaFundo).observe(document.body, { attributes:true, attributeFilter:['class'], subtree:true });
 
   // ================= navegação =================
-  const NOMES_TELA = { dashboard:'Visão geral', movs:'Movimentações', relatorios:'Relatórios', metas:'Metas', config:'Configurações', simulacao:'Simular decisão' };
-  const ICONES_TELA = { dashboard:'🏠', movs:'💰', relatorios:'📊', metas:'🎯', config:'⚙️', simulacao:'🔮' };
   const SCREEN_ORDER = ['dashboard','movs','relatorios','metas','simulacao','config'];
   const TELAS_COM_BOTAO_NOVA = ['movs','metas'];
   const TELAS_COM_BOTAO_DIARIO = ['dashboard'];
@@ -2737,8 +2735,11 @@
     let inicioX = 0, inicioY = 0, inicioContagem = 0, inicioTempo = 0;
     const LIMIAR_PX = 60, LIMITE_TEMPO_MS = 800;
     function menuAberto(){ return document.getElementById('modalMais').classList.contains('show'); }
+    // fileiras roláveis na horizontal (chips de filtro, abas de intervalo) não devem disparar o gesto de trocar de tela
+    const SELETOR_AREAS_ROLAVEIS = '.chips, .rel-tabs, .extrato-range-tabs';
     document.addEventListener('touchstart', (e) => {
       if(document.body.classList.contains('modal-aberto') && !menuAberto()) { inicioContagem = 0; return; }
+      if(e.target.closest(SELETOR_AREAS_ROLAVEIS)) { inicioContagem = 0; return; }
       inicioContagem = e.touches.length;
       inicioX = e.touches[0].clientX;
       inicioY = e.touches[0].clientY;
