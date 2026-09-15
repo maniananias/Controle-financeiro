@@ -61,9 +61,7 @@
   }
   body::before{
     content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
-    background:
-      radial-gradient(560px 420px at 12% -6%, rgba(34,227,178,.16), transparent 60%),
-      radial-gradient(620px 480px at 100% 18%, rgba(108,124,255,.14), transparent 55%);
+    background:var(--bg);
   }
   h1,h2,h3{font-family:'Space Grotesk',sans-serif;margin:0;letter-spacing:-.2px;}
   .mono{font-family:'JetBrains Mono',monospace;}
@@ -237,13 +235,13 @@
   .rel-tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right, black calc(100% - 28px), transparent 100%);mask-image:linear-gradient(to right, black calc(100% - 28px), transparent 100%);}
   .rel-tabs::-webkit-scrollbar{display:none;}
   .rel-tab{flex:0 0 auto;padding:7px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
-  .rel-tab.active{background:var(--gradient-primary);color:#fff;border-color:transparent;}
+  .rel-tab.active{background:var(--primary);color:var(--bg);font-weight:700;border-color:transparent;}
   .rel-view{display:none;}
   .rel-view.active{display:block;}
   .extrato-range-tabs{display:flex;gap:7px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;}
   .extrato-range-tabs::-webkit-scrollbar{display:none;}
   .extrato-range-btn{flex:0 0 auto;padding:7px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:color .15s,border-color .15s;}
-  .extrato-range-btn.active{background:var(--gradient-primary);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(34,227,178,.22);}
+  .extrato-range-btn.active{background:var(--primary);color:var(--bg);font-weight:700;border-color:transparent;box-shadow:0 4px 14px rgba(34,227,178,.22);}
   .extrato-range-tabs-passado{margin-top:-6px;}
   .extrato-range-label{flex:0 0 auto;font-size:11px;color:var(--ink-soft);opacity:.65;align-self:center;padding-right:2px;}
   .extrato-dia{background:var(--surface);border-radius:12px;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(255,255,255,.07);}
@@ -286,9 +284,11 @@
   .extrato-zerar{font-size:9.5px;opacity:.4;font-style:italic;color:var(--ink-soft);}
   .extrato-saldo{font-weight:800;background:rgba(255,193,90,.09);color:#FFC15A;}
   .extrato-saldo.neg{background:rgba(255,107,133,.15);color:#FF6B85;}
-  tr.extrato-linha-hoje{background:rgba(124,140,255,.07);}
-  tr.extrato-linha-hoje td{box-shadow:inset 0 1px 0 rgba(124,140,255,.4),inset 0 -1px 0 rgba(124,140,255,.4);}
-  tr.extrato-linha-hoje td:first-child{box-shadow:inset 0 1px 0 rgba(124,140,255,.4),inset 0 -1px 0 rgba(124,140,255,.4),inset 3px 0 0 rgba(124,140,255,.6);}
+  tr.extrato-linha-hoje{background:rgba(124,140,255,.13);}
+  tr.extrato-linha-hoje td{box-shadow:inset 0 1px 0 rgba(124,140,255,.55),inset 0 -1px 0 rgba(124,140,255,.55);font-weight:700;}
+  tr.extrato-linha-hoje td:first-child{box-shadow:inset 0 1px 0 rgba(124,140,255,.55),inset 0 -1px 0 rgba(124,140,255,.55),inset 4px 0 0 rgba(124,140,255,.85);}
+  tr.extrato-linha-fimdesemana td:first-child{color:var(--gold);opacity:.85;}
+  tr.extrato-linha-mes td{padding:7px 10px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);background:var(--surface-alt);border-bottom:1px solid rgba(255,255,255,.08);}
   tr.extrato-linha-folego .extrato-saldo{background:rgba(34,227,178,.22);color:#22E3B2;}
   tr.extrato-linha-folego .extrato-saldo.neg{background:rgba(255,107,133,.16);color:#FF6B85;}
   .extrato-legenda{font-size:10.5px;color:var(--ink-soft);opacity:.75;margin:10px 2px 0;display:flex;align-items:center;gap:5px;flex-wrap:wrap;line-height:1.6;}
@@ -530,11 +530,11 @@
   <section class="screen" id="screen-relatorios">
     <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Relatórios</h1></div></div>
     <div class="rel-tabs">
-      <div class="rel-tab active" data-rel="extrato">Extrato</div>
-      <div class="rel-tab" data-rel="fechamento">Fechamento</div>
-      <div class="rel-tab" data-rel="categorias">Categorias</div>
-      <div class="rel-tab" data-rel="evolucao">Evolução</div>
-      <div class="rel-tab" data-rel="comparacao">Comparar</div>
+      <div class="rel-tab active" data-rel="extrato">📋 Extrato</div>
+      <div class="rel-tab" data-rel="fechamento">📅 Fechamento</div>
+      <div class="rel-tab" data-rel="categorias">🏷️ Categorias</div>
+      <div class="rel-tab" data-rel="evolucao">📈 Evolução</div>
+      <div class="rel-tab" data-rel="comparacao">⚖️ Comparar</div>
     </div>
 
     <div class="rel-view active" id="rel-extrato">
@@ -673,6 +673,19 @@
       <p class="ferias-dica" style="margin:10px 0 0;">Estimativa de referência (salário ÷ 30 × dias trabalhados naquele mês). Cada empresa processa a folha de um jeito. Use como ponto de partida e ajuste o lançamento do salário desse mês manualmente, se precisar.</p>
     </div>
 
+    <div class="ajuste-box" id="feriasOrcamentoBox" style="display:none;">
+      <p class="ajuste-titulo">💰 Quanto você pode gastar nessas férias sem apertar depois</p>
+      <p class="ferias-dica" style="margin:0 0 10px;">Nesses dias você não vai ter o gasto diário normal. Esse valor liberado soma com o seu Fôlego do mês em que você volta, dando uma folga extra pra passeio, restaurante etc.</p>
+      <div class="ferias-resultado-linha ferias-resultado-exato">
+        <span class="ferias-resultado-tag">Sem considerar reserva mínima</span>
+        <div id="feriasOrcamentoBrutoLinha"></div>
+      </div>
+      <div class="ferias-resultado-linha ferias-resultado-estimativa" id="feriasOrcamentoSeguroBox" style="display:none;">
+        <span class="ferias-resultado-tag">Respeitando sua reserva mínima configurada</span>
+        <div id="feriasOrcamentoSeguroLinha"></div>
+      </div>
+    </div>
+
     <button class="btn-primario" id="btnCalcularFerias" style="width:100%;margin:6px 0 12px;">Calcular</button>
     <button class="btn-secundario" id="btnLancarFerias" style="width:100%;display:none;">Lançar como Entrada</button>
   </section>
@@ -717,7 +730,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.7.0</p>
+      <p class="versao-app">Versão 1.9.0</p>
     </div>
   </section>
 
@@ -1250,6 +1263,22 @@
         alerts.push({tipo:'atencao', texto:'Você lançou férias este mês. Se o salário normal vier diferente por causa disso, lembre de ajustar o lançamento dele também.'});
       }
     }
+    // se o mês filtrado toca o período de férias em si (não só o pagamento), avisa quanto dá pra gastar
+    state.movimentacoes.forEach(m => {
+      if(m.tipo!=='entrada' || m.categoria!=='Férias' || !m.feriasInicio || !m.feriasDias) return;
+      const fimFerias = addDiasISO(m.feriasInicio, m.feriasDias-1);
+      const ini = parseISO(m.feriasInicio), fim = parseISO(fimFerias);
+      const tocaMes = (ano>ini.ano || (ano===ini.ano && mes>=ini.mes)) && (ano<fim.ano || (ano===fim.ano && mes<=fim.mes));
+      if(!tocaMes) return;
+      const orc = calcularOrcamentoFerias(m.feriasInicio, m.feriasDias, m.valor, m.data, m.feriasImpacto);
+      if(orc){
+        let texto = 'Você tem férias nesse período. Dá pra gastar até '+fmt(orc.bruto)+' sem apertar quando voltar.';
+        if(orc.saldoMinimo > 0 && orc.seguro !== orc.bruto){
+          texto += ' Respeitando sua reserva mínima configurada, o valor seguro é '+fmt(orc.seguro)+'.';
+        }
+        alerts.push({tipo:'positivo', texto});
+      }
+    });
     return alerts;
   }
 
@@ -1633,6 +1662,44 @@
       return { ano, mes, diasFerias, diasTrabalhados, estimativa };
     }).sort((a,b) => (a.ano-b.ano) || (a.mes-b.mes));
   }
+  // quanto dá pra gastar nessas férias (lazer, viagem, restaurante) sem prejudicar o mês em que você volta:
+  // Fôlego do mês de retorno + o quanto você deixa de gastar de diário nos dias de férias.
+  // A versão "segura" ainda reserva o Saldo mínimo configurado (se houver) antes de somar essa folga.
+  // valorPagamento/dataPagamento: opcional — o valor das férias que vai (ou já foi) lançado, pra já contar com
+  // esse dinheiro no Fôlego do retorno mesmo ANTES de você confirmar o lançamento (senão o cálculo fica mais
+  // apertado do que vai ser de verdade, já que esse dinheiro entra bem antes da véspera do salário do retorno).
+  // impactoSalarios: opcional — a lista de {ano,mes,estimativa} de estimarSalariosAfetados(). Enquanto você não
+  // editar manualmente o lançamento do salário reduzido daquele mês, o valor gravado continua "cheio" e infla
+  // o Fôlego do retorno por engano — aqui a gente desconta essa diferença, pra não somar dinheiro que não existe.
+  function calcularOrcamentoFerias(dataInicio, diasTirados, valorPagamento, dataPagamento, impactoSalarios){
+    const dataRetorno = addDiasISO(dataInicio, diasTirados);
+    const p = parseISO(dataRetorno);
+    garantirRecorrencias(p.ano, p.mes);
+    const diaAntes = diaAntesSalario(p.ano, p.mes);
+    if(!diaAntes) return null;
+    const isoCheckpoint = isoDate(p.ano, p.mes, diaAntes);
+    const dias = saldosDiariosDoMes(p.ano, p.mes);
+    let folegoRetorno = dias[diaAntes-1].saldo;
+    if(valorPagamento && dataPagamento && dataPagamento <= isoCheckpoint){
+      // só soma se ainda não estiver realmente lançado (senão contaria esse dinheiro duas vezes)
+      const jaLancado = state.movimentacoes.some(m => m.tipo==='entrada' && m.categoria==='Férias' && m.data===dataPagamento && m.feriasInicio===dataInicio);
+      if(!jaLancado) folegoRetorno += valorPagamento;
+    }
+    if(Array.isArray(impactoSalarios)){
+      impactoSalarios.forEach(imp => {
+        const prefixo = imp.ano+'-'+pad(imp.mes+1)+'-';
+        const salarioGravado = state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
+        if(salarioGravado && salarioGravado.data <= isoCheckpoint && salarioGravado.valor > imp.estimativa){
+          folegoRetorno -= (salarioGravado.valor - imp.estimativa);
+        }
+      });
+    }
+    const diarioLiberado = diasTirados * valorDiarioPadraoAtual();
+    const saldoMinimo = state.config.saldoMinimo || 0;
+    const bruto = folegoRetorno + diarioLiberado;
+    const seguro = Math.max(0, folegoRetorno - saldoMinimo) + diarioLiberado;
+    return { dataRetorno, ano:p.ano, mes:p.mes, diaAntes, folegoRetorno, diarioLiberado, saldoMinimo, bruto, seguro };
+  }
   let feriasModo = 'integral';
   let ultimoCalculoFerias = null;
   function renderFeriasTela(){
@@ -1653,6 +1720,7 @@
     document.getElementById('feriasAvisoDias').style.display = 'none';
     document.getElementById('feriasResultadoBox').style.display = 'none';
     document.getElementById('feriasImpactoBox').style.display = 'none';
+    document.getElementById('feriasOrcamentoBox').style.display = 'none';
     document.getElementById('btnLancarFerias').style.display = 'none';
   }
   document.getElementById('feriasBtnIntegral').addEventListener('click', () => setFeriasModo('integral'));
@@ -1714,6 +1782,22 @@
       impactoBox.style.display = 'block';
     }else{
       impactoBox.style.display = 'none';
+    }
+
+    const orcamentoBox = document.getElementById('feriasOrcamentoBox');
+    const orcamento = calcularOrcamentoFerias(dataInicio, diasTirados, liquido, data, impacto);
+    if(orcamento){
+      document.getElementById('feriasOrcamentoBrutoLinha').innerHTML = 'Dá pra gastar até <b class="mono pos">'+fmt(orcamento.bruto)+'</b>';
+      const seguroBox = document.getElementById('feriasOrcamentoSeguroBox');
+      if(orcamento.saldoMinimo > 0){
+        document.getElementById('feriasOrcamentoSeguroLinha').innerHTML = 'Dá pra gastar até <b class="mono pos">'+fmt(orcamento.seguro)+'</b>';
+        seguroBox.style.display = 'block';
+      }else{
+        seguroBox.style.display = 'none';
+      }
+      orcamentoBox.style.display = 'block';
+    }else{
+      orcamentoBox.style.display = 'none';
     }
     document.getElementById('btnLancarFerias').style.display = 'block';
   });
@@ -2349,16 +2433,29 @@
     const dias = saldosDiariosIntervalo(isoInicio, isoFim);
     const diasFolego = diasFolegoNoIntervalo(isoInicio, isoFim);
 
+    // agrupa por mês com um cabeçalho sutil — só quando o intervalo realmente cruza mais de um mês
+    const mesesDistintos = new Set(dias.map(d => d.ano+'-'+d.mes)).size;
+    let mesAnterior = null;
     const linhas = dias.map(d => {
-      const diaSemana = DIAS_SEMANA_ABREV[new Date(d.ano, d.mes, d.dia).getDay()];
+      const diaSemanaNum = new Date(d.ano, d.mes, d.dia).getDay();
+      const diaSemana = DIAS_SEMANA_ABREV[diaSemanaNum];
       const classesExtra = [];
       if(d.iso === hojeISO) classesExtra.push('extrato-linha-hoje');
       if(diasFolego.has(d.iso)) classesExtra.push('extrato-linha-folego');
+      if(diaSemanaNum === 0 || diaSemanaNum === 6) classesExtra.push('extrato-linha-fimdesemana');
       const saldoNeg = d.saldo < 0;
+      let headerMes = '';
+      if(mesesDistintos > 1){
+        const chaveMes = d.ano+'-'+d.mes;
+        if(chaveMes !== mesAnterior){
+          headerMes = '<tr class="extrato-linha-mes"><td colspan="5">'+MESES[d.mes]+'</td></tr>';
+          mesAnterior = chaveMes;
+        }
+      }
       // dia com valor de diário DEFINIDO de propósito (mesmo que seja zero) vs dia sem nada configurado ainda
       const temDiarioDefinido = d.diario > 0 || state.movimentacoes.some(mv => mv.tipo==='diario' && mv.data===d.iso && !mv.recorrenteDiario);
       const temFerias = state.movimentacoes.some(mv => mv.tipo==='entrada' && mv.categoria==='Férias' && mv.feriasInicio && d.iso >= mv.feriasInicio && d.iso < addDiasISO(mv.feriasInicio, mv.feriasDias));
-      return '<tr class="'+classesExtra.join(' ')+'">'+
+      return headerMes+'<tr class="'+classesExtra.join(' ')+'">'+
         '<td class="extrato-col-dia">'+String(d.dia).padStart(2,'0')+'/'+String(d.mes+1).padStart(2,'0')+'/'+String(d.ano).slice(-2)+'<small>'+diaSemana+'</small></td>'+
         '<td class="extrato-col-num'+(d.entradas>0 ? ' extrato-entrada' : '')+(temFerias ? ' extrato-entrada-ferias' : '')+'" data-iso="'+d.iso+'" data-tipo="entrada">'+(d.entradas>0 ? fmtNum(d.entradas) : '')+(temFerias ? '<span class="extrato-ferias-tag">🏖️ férias</span>' : '')+'</td>'+
         '<td class="extrato-col-num'+(d.saidas>0 ? ' extrato-saida' : '')+'" data-iso="'+d.iso+'" data-tipo="saida">'+(d.saidas>0 ? fmtNum(d.saidas) : '')+'</td>'+
