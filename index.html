@@ -667,9 +667,14 @@
       </div>
     </div>
 
+    <div class="ajuste-box" id="feriasImpactoBox" style="display:none;">
+      <p class="ajuste-titulo">💡 Isso pode afetar seu salário normal em</p>
+      <div id="feriasImpactoLista"></div>
+      <p class="ferias-dica" style="margin:10px 0 0;">Estimativa de referência (salário ÷ 30 × dias trabalhados naquele mês). Cada empresa processa a folha de um jeito. Use como ponto de partida e ajuste o lançamento do salário desse mês manualmente, se precisar.</p>
+    </div>
+
     <button class="btn-primario" id="btnCalcularFerias" style="width:100%;margin:6px 0 12px;">Calcular</button>
     <button class="btn-secundario" id="btnLancarFerias" style="width:100%;display:none;">Lançar como Entrada</button>
-    <p class="ferias-dica" style="margin-top:12px;">💡 Se o salário normal desse mês vier diferente por causa das férias, lembre de editar o lançamento do salário desse mês manualmente (abra ele na lista de Movimentações). O app não faz esse ajuste sozinho.</p>
   </section>
 
   <!-- ===== CONFIGURAÇÕES ===== -->
@@ -712,7 +717,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.6.0</p>
+      <p class="versao-app">Versão 1.7.0</p>
     </div>
   </section>
 
@@ -1229,9 +1234,21 @@
       alerts.push({tipo:'alerta-forte', texto:'Seu saldo está abaixo do valor mínimo definido.'});
     }
     const prefixoMes = ano+'-'+pad(mes+1)+'-';
-    const temFeriasNoMes = state.movimentacoes.some(m => m.tipo==='entrada' && m.categoria==='Férias' && m.data.startsWith(prefixoMes));
-    if(temFeriasNoMes){
-      alerts.push({tipo:'atencao', texto:'Você lançou férias este mês. Se o salário normal vier diferente por causa disso, lembre de ajustar o lançamento dele também.'});
+    const impactoDoMes = [];
+    state.movimentacoes.forEach(m => {
+      if(m.tipo==='entrada' && m.categoria==='Férias' && Array.isArray(m.feriasImpacto)){
+        const achou = m.feriasImpacto.find(x => x.ano===ano && x.mes===mes);
+        if(achou) impactoDoMes.push(achou);
+      }
+    });
+    if(impactoDoMes.length > 0){
+      const totalEstimado = impactoDoMes.reduce((a,x)=>a+x.estimativa,0);
+      alerts.push({tipo:'atencao', texto:'Você tirou férias que afetam este mês. Seu salário normal pode vir por volta de '+fmt(totalEstimado)+' (estimativa). Confira e ajuste o lançamento se precisar.'});
+    }else{
+      const temFeriasNoMes = state.movimentacoes.some(m => m.tipo==='entrada' && m.categoria==='Férias' && m.data.startsWith(prefixoMes));
+      if(temFeriasNoMes){
+        alerts.push({tipo:'atencao', texto:'Você lançou férias este mês. Se o salário normal vier diferente por causa disso, lembre de ajustar o lançamento dele também.'});
+      }
     }
     return alerts;
   }
@@ -1596,6 +1613,26 @@
     const tercoVendidos = Math.round(valorVendidos/3);
     return { valorTirados, tercoTirados, valorVendidos, tercoVendidos, total: valorTirados+tercoTirados+valorVendidos+tercoVendidos };
   }
+  // estima, pra cada mês civil tocado pelas férias, quantos dias sobraram trabalhados e o salário proporcional
+  // (é uma ESTIMATIVA de referência pra você ajustar o lançamento do salário normal daquele mês manualmente —
+  // cada empresa processa a folha de um jeito, então isso não é garantido, é só um número de partida)
+  function estimarSalariosAfetados(salarioCents, dataInicio, diasTirados){
+    const porMes = {};
+    let cursor = dataInicio;
+    for(let i=0; i<diasTirados; i++){
+      const p = parseISO(cursor);
+      const chave = p.ano+'-'+p.mes;
+      porMes[chave] = (porMes[chave]||0) + 1;
+      cursor = addDiasISO(cursor, 1);
+    }
+    return Object.keys(porMes).map(chave => {
+      const [ano, mes] = chave.split('-').map(Number);
+      const diasFerias = porMes[chave];
+      const diasTrabalhados = Math.max(0, 30 - diasFerias);
+      const estimativa = Math.round(salarioCents/30 * diasTrabalhados);
+      return { ano, mes, diasFerias, diasTrabalhados, estimativa };
+    }).sort((a,b) => (a.ano-b.ano) || (a.mes-b.mes));
+  }
   let feriasModo = 'integral';
   let ultimoCalculoFerias = null;
   function renderFeriasTela(){
@@ -1615,6 +1652,7 @@
     document.getElementById('feriasCamposParcial').style.display = modo==='parcial' ? 'block' : 'none';
     document.getElementById('feriasAvisoDias').style.display = 'none';
     document.getElementById('feriasResultadoBox').style.display = 'none';
+    document.getElementById('feriasImpactoBox').style.display = 'none';
     document.getElementById('btnLancarFerias').style.display = 'none';
   }
   document.getElementById('feriasBtnIntegral').addEventListener('click', () => setFeriasModo('integral'));
@@ -1647,7 +1685,8 @@
     const desconto = centsFromInput(document.getElementById('feriasDesconto'));
     const r = calcularFerias(salario, feriasModo, diasTirados, diasVendidos);
     const liquido = Math.max(0, r.total - desconto);
-    ultimoCalculoFerias = Object.assign({ salario, modo:feriasModo, dataInicio, diasTirados, diasVendidos, data, desconto, liquido }, r);
+    const impacto = estimarSalariosAfetados(salario, dataInicio, diasTirados);
+    ultimoCalculoFerias = Object.assign({ salario, modo:feriasModo, dataInicio, diasTirados, diasVendidos, data, desconto, liquido, impacto }, r);
 
     let detalhes = '<div class="ajuste-linhas"><div><span>'+(feriasModo==='integral'?'Salário (30 dias)':'Dias tirados ('+diasTirados+')')+'</span><b class="mono pos">'+fmt(r.valorTirados)+'</b></div>'+
       '<div><span>1/3 constitucional</span><b class="mono pos">'+fmt(r.tercoTirados)+'</b></div></div>';
@@ -1665,6 +1704,17 @@
       linhaLiquido.style.display = 'none';
     }
     document.getElementById('feriasResultadoBox').style.display = 'block';
+
+    const impactoBox = document.getElementById('feriasImpactoBox');
+    const temImpacto = impacto.some(x => x.diasTrabalhados > 0);
+    if(temImpacto){
+      document.getElementById('feriasImpactoLista').innerHTML = impacto.filter(x => x.diasTrabalhados > 0).map(x =>
+        '<div class="ajuste-linhas"><div><span>'+MESES[x.mes]+'/'+x.ano+' ('+x.diasTrabalhados+' dias trabalhados)</span><b class="mono pos">'+fmt(x.estimativa)+'</b></div></div>'
+      ).join('');
+      impactoBox.style.display = 'block';
+    }else{
+      impactoBox.style.display = 'none';
+    }
     document.getElementById('btnLancarFerias').style.display = 'block';
   });
   document.getElementById('btnLancarFerias').addEventListener('click', async () => {
@@ -1677,6 +1727,7 @@
       id: uid(), data: ultimoCalculoFerias.data, tipo:'entrada', valor: ultimoCalculoFerias.liquido,
       categoria:'Férias', descricao, formaPagamento:'Transferência',
       feriasInicio: ultimoCalculoFerias.dataInicio, feriasDias: ultimoCalculoFerias.diasTirados,
+      feriasImpacto: ultimoCalculoFerias.impacto,
       recorrente:false, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm:new Date().toISOString()
     });
     limparCache();
