@@ -2824,9 +2824,12 @@
     document.getElementById('cfgDiaRecebimento').value = state.config.diaRecebimento || '';
     setMoneyValue(document.getElementById('cfgDiarioValor'), valorDiarioPadraoAtual());
   }
-  bindMoney(document.getElementById('cfgSaldoInicial'), c => { state.config.saldoInicial = c; limparCache(); salvarConfig(); });
-  bindMoney(document.getElementById('cfgOrcamento'), c => { state.config.orcamentoMensal = c; salvarConfig(); });
-  bindMoney(document.getElementById('cfgSaldoMinimo'), c => { state.config.saldoMinimo = c; salvarConfig(); });
+  bindMoney(document.getElementById('cfgSaldoInicial'), c => { state.config.saldoInicial = c; });
+  document.getElementById('cfgSaldoInicial').addEventListener('blur', () => { limparCache(); salvarConfig(); });
+  bindMoney(document.getElementById('cfgOrcamento'), c => { state.config.orcamentoMensal = c; });
+  document.getElementById('cfgOrcamento').addEventListener('blur', () => salvarConfig());
+  bindMoney(document.getElementById('cfgSaldoMinimo'), c => { state.config.saldoMinimo = c; });
+  document.getElementById('cfgSaldoMinimo').addEventListener('blur', () => salvarConfig());
   document.getElementById('cfgDiaRecebimento').addEventListener('change', e => {
     const v = Math.max(1, Math.min(31, Number(e.target.value) || 0));
     if(v > 0){ state.config.diaRecebimento = v; limparCache(); salvarConfig(); }
