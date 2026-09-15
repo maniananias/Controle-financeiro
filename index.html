@@ -43,6 +43,11 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  /* esconde a barra de rolagem visualmente (o toque/arrasto pra rolar continua funcionando normal) */
+  html{scrollbar-width:none;}
+  html::-webkit-scrollbar{display:none;}
+  body{scrollbar-width:none;}
+  body::-webkit-scrollbar{display:none;}
   html{overflow-x:hidden;background:var(--bg);}
   body.modal-aberto{position:fixed;left:0;right:0;overflow:hidden;width:100%;}
   body{
@@ -399,7 +404,7 @@
   @keyframes slideInDrawer{ from{ transform:translateX(-100%); } to{ transform:translateX(0); } }
   .modal-menu-topo{align-items:stretch;justify-content:flex-start;padding:0;}
   .modal-menu-topo .modal-sheet{
-    width:78%;max-width:320px;height:100%;border-radius:0 20px 20px 0;
+    width:78%;max-width:320px;height:100%;max-height:none;border-radius:0 20px 20px 0;
     padding-top:calc(20px + env(safe-area-inset-top));
     box-shadow:8px 0 32px rgba(0,0,0,.4);
     animation:slideInDrawer .24s ease;
@@ -585,12 +590,8 @@
   <!-- ===== SIMULAÇÃO ===== -->
   <section class="screen" id="screen-simulacao">
     <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Simular decisão</h1></div><button class="btn-fechar-tela" id="btnFecharSimulacao" type="button">✕ Fechar</button></div>
-    <p class="sim-intro">Antes de gastar (ou receber) alguma coisa, teste aqui o impacto real nos próximos 12 meses. Nada é lançado até você confirmar.</p>
+    <p class="sim-intro">Antes de gastar alguma coisa, teste aqui o impacto real nos próximos 12 meses. Nada é lançado até você confirmar.</p>
 
-    <div class="tipo-toggle">
-      <button type="button" id="simBtnEntrada">↑ Entrada</button>
-      <button type="button" id="simBtnSaida">↓ Saída</button>
-    </div>
     <div class="field"><label>Valor</label><input id="simValor" inputmode="numeric" placeholder="R$ 0,00"></div>
     <div class="field"><label>Data</label><input type="date" id="simData"></div>
     <div class="field"><label>Categoria</label><select id="simCategoria"></select></div>
@@ -656,7 +657,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.4.4</p>
+      <p class="versao-app">Versão 1.5.1</p>
     </div>
   </section>
 
@@ -1495,7 +1496,7 @@
   document.getElementById('chartComparativoBox').addEventListener('click', () => abrirGraficoExpandido('comparativo'));
 
   // ================= SIMULAÇÃO =================
-  let simTipo = 'saida';
+  const simTipo = 'saida'; // a Simulação só testa gastos (saída) agora, entrada foi removida
   let chartSimulacao;
   let ultimaSimulacao = null;
 
@@ -1503,15 +1504,7 @@
     document.getElementById('simCategoria').innerHTML = CATEGORIAS.map(c=>'<option value="'+c+'">'+(CAT_ICONES[c]||'')+' '+c+'</option>').join('');
     document.getElementById('simData').value = todayISO();
     document.getElementById('resultadoSimulacao').style.display = 'none';
-    setSimTipo('saida');
   }
-  function setSimTipo(tipo){
-    simTipo = tipo;
-    document.getElementById('simBtnEntrada').className = tipo==='entrada' ? 'active-entrada' : '';
-    document.getElementById('simBtnSaida').className = tipo==='saida' ? 'active-saida' : '';
-  }
-  document.getElementById('simBtnEntrada').addEventListener('click', () => setSimTipo('entrada'));
-  document.getElementById('simBtnSaida').addEventListener('click', () => setSimTipo('saida'));
   bindMoney(document.getElementById('simValor'));
   document.getElementById('simRecorrente').addEventListener('change', (e) => {
     document.getElementById('simCampoQtd').style.display = e.target.checked ? 'block' : 'none';
