@@ -705,7 +705,7 @@
     <div class="field"><label>Data da 2ª parcela</label><input type="date" id="decimoData2"></div>
 
     <div class="field"><label>Desconto estimado na 2ª parcela (INSS + IR, opcional)</label><input id="decimoDesconto" inputmode="numeric" placeholder="R$ 0,00"></div>
-    <p class="ferias-dica">A 1ª parcela nunca tem desconto, por lei. O desconto (INSS/IR) é calculado em cima do 13º inteiro e só sai da 2ª parcela — o app não tenta adivinhar isso sozinho, se já recebeu antes pode conferir no holerite.</p>
+    <p class="ferias-dica">A 1ª parcela nunca tem desconto, por lei. O desconto (INSS/IR) é calculado em cima do 13º inteiro e só sai da 2ª parcela. O app não tenta adivinhar isso sozinho; se já recebeu antes, pode conferir no holerite.</p>
 
     <div class="ajuste-box" id="decimoResultadoBox" style="display:none;">
       <p class="ajuste-titulo">Valor calculado</p>
@@ -734,9 +734,11 @@
 
     <div class="config-section">
       <h3>📊 Perfil financeiro</h3>
+      <div class="field"><label>Salário mensal</label><input id="cfgSalarioMensal" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra pré-preencher as calculadoras de Férias e 13º salário. Mudou de valor? Só atualizar aqui.</p>
       <div class="field"><label>Saldo inicial (ano de início: <span id="anoInicialLabel"></span>)</label><input id="cfgSaldoInicial" inputmode="numeric" placeholder="R$ 0,00"></div>
       <div class="field"><label>Esse saldo era de que dia?</label><input type="date" id="cfgDataSaldoInicial"></div>
-      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Antes dessa data, o app não soma nem subtrai nenhum lançamento no seu saldo — ele fica parado nesse valor até chegar nesse dia.</p>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Antes dessa data, o app não soma nem subtrai nenhum lançamento no seu saldo. Ele fica parado nesse valor até chegar nesse dia.</p>
       <div class="field"><label>Dia de recebimento</label><input id="cfgDiaRecebimento" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 25"></div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) em todo o app: Dashboard, Extrato e Simulação. Se o mês tiver menos dias que esse número (ex: fevereiro), usa o último dia do mês.</p>
       <div class="field"><label>Orçamento mensal</label><input id="cfgOrcamento" inputmode="numeric" placeholder="R$ 0,00"></div>
@@ -927,27 +929,34 @@
     </div>
 
     <div class="wizard-step" data-step="1">
+      <h2>Salário mensal</h2>
+      <p>Qual o valor do seu salário? (pode deixar em branco e preencher depois em Configurações)</p>
+      <input id="wSalarioMensal" inputmode="numeric" placeholder="R$ 0,00">
+      <div class="wizard-nav"><button class="btn-texto" data-back>Voltar</button><button class="btn-primario" data-next>Continuar</button></div>
+    </div>
+
+    <div class="wizard-step" data-step="2">
       <h2>Gasto diário</h2>
       <p>Qual valor você costuma gastar por dia, em média? (pode ajustar depois)</p>
       <input id="wDiarioValor" inputmode="numeric" placeholder="R$ 0,00">
       <div class="wizard-nav"><button class="btn-texto" data-back>Voltar</button><button class="btn-primario" data-next>Continuar</button></div>
     </div>
 
-    <div class="wizard-step" data-step="2">
+    <div class="wizard-step" data-step="3">
       <h2>Orçamento mensal</h2>
       <p>Quanto você planeja gastar por mês?</p>
       <input id="wOrcamento" inputmode="numeric" placeholder="R$ 0,00">
       <div class="wizard-nav"><button class="btn-texto" data-back>Voltar</button><button class="btn-primario" data-next>Continuar</button></div>
     </div>
 
-    <div class="wizard-step" data-step="3">
+    <div class="wizard-step" data-step="4">
       <h2>Ano de início</h2>
       <p>A partir de qual ano deseja controlar suas finanças?</p>
       <input id="wAnoInicial" inputmode="numeric" placeholder="2026">
       <div class="wizard-nav"><button class="btn-texto" data-back>Voltar</button><button class="btn-primario" data-next>Continuar</button></div>
     </div>
 
-    <div class="wizard-step" data-step="4">
+    <div class="wizard-step" data-step="5">
       <h2>Dados de exemplo</h2>
       <p>Quer começar com alguns lançamentos de exemplo para ver o painel funcionando, ou prefere começar do zero?</p>
       <div class="wizard-nav" style="flex-direction:column;gap:10px;">
@@ -1673,6 +1682,7 @@
 
   // ================= CALCULADORA DE FÉRIAS =================
   function valorSalarioAtual(){
+    if(state.config.salarioMensal > 0) return state.config.salarioMensal;
     const origens = state.movimentacoes.filter(m => m.tipo==='entrada' && m.categoria==='Salário' && (m.recorrente || m.origemRecorrenteId));
     if(origens.length === 0) return 0;
     origens.sort((a,b) => b.data.localeCompare(a.data));
@@ -2852,11 +2862,11 @@
       '<div class="ajuste-box" style="margin-top:14px;">'+
         '<p class="ajuste-titulo">💡 Ideias do que dá pra cadastrar aqui</p>'+
         '<p style="font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:0;">'+
-          '🚗 <b>IPVA / IPTU / seguro do carro</b> — contas anuais, pra ir guardando aos poucos<br>'+
-          '✈️ <b>Viagem</b> — juntar pra uma passagem ou hospedagem<br>'+
-          '🛟 <b>Reserva de emergência</b> — um colchão de segurança pra imprevistos<br>'+
-          '📱 <b>Trocar de aparelho</b> — celular, notebook, eletrodoméstico<br>'+
-          '🎁 <b>Data especial</b> — presente de fim de ano, aniversário'+
+          '🚗 <b>IPVA / IPTU / seguro do carro</b>: contas anuais, pra ir guardando aos poucos<br>'+
+          '✈️ <b>Viagem</b>: juntar pra uma passagem ou hospedagem<br>'+
+          '🛟 <b>Reserva de emergência</b>: um colchão de segurança pra imprevistos<br>'+
+          '📱 <b>Trocar de aparelho</b>: celular, notebook, eletrodoméstico<br>'+
+          '🎁 <b>Data especial</b>: presente de fim de ano, aniversário'+
         '</p>'+
       '</div>'; return; }
     el.innerHTML = state.metas.map(meta => {
@@ -2951,6 +2961,7 @@
   }
   function renderConfig(){
     document.getElementById('anoInicialLabel').textContent = state.config.anoInicial;
+    setMoneyValue(document.getElementById('cfgSalarioMensal'), state.config.salarioMensal || 0);
     setMoneyValue(document.getElementById('cfgSaldoInicial'), state.config.saldoInicial);
     document.getElementById('cfgDataSaldoInicial').value = state.config.dataSaldoInicial || '';
     setMoneyValue(document.getElementById('cfgOrcamento'), state.config.orcamentoMensal);
@@ -2958,6 +2969,8 @@
     document.getElementById('cfgDiaRecebimento').value = state.config.diaRecebimento || '';
     setMoneyValue(document.getElementById('cfgDiarioValor'), valorDiarioPadraoAtual());
   }
+  bindMoney(document.getElementById('cfgSalarioMensal'), c => { state.config.salarioMensal = c; });
+  document.getElementById('cfgSalarioMensal').addEventListener('blur', () => salvarConfig());
   bindMoney(document.getElementById('cfgSaldoInicial'), c => { state.config.saldoInicial = c; });
   document.getElementById('cfgSaldoInicial').addEventListener('blur', () => { limparCache(); salvarConfig(); });
   document.getElementById('cfgDataSaldoInicial').addEventListener('change', e => {
@@ -3144,7 +3157,7 @@
 
   // ================= WIZARD (primeiro acesso) =================
   let wizardStep = 0;
-  const totalSteps = 5;
+  const totalSteps = 6;
   function renderWizardDots(){
     document.getElementById('wizardDots').innerHTML = Array.from({length:totalSteps}).map((_,i)=>'<span class="'+(i===wizardStep?'on':'')+'"></span>').join('');
   }
@@ -3156,6 +3169,7 @@
   document.querySelectorAll('.wizard-step [data-next]').forEach(b => b.addEventListener('click', () => irParaStep(wizardStep+1)));
   document.querySelectorAll('.wizard-step [data-back]').forEach(b => b.addEventListener('click', () => irParaStep(wizardStep-1)));
   bindMoney(document.getElementById('wSaldoInicial'));
+  bindMoney(document.getElementById('wSalarioMensal'));
   bindMoney(document.getElementById('wDiarioValor'));
   bindMoney(document.getElementById('wOrcamento'));
 
@@ -3165,6 +3179,7 @@
     state.config = {
       saldoInicial: centsFromInput(document.getElementById('wSaldoInicial')),
       dataSaldoInicial: todayISO(),
+      salarioMensal: centsFromInput(document.getElementById('wSalarioMensal')),
       orcamentoMensal: centsFromInput(document.getElementById('wOrcamento')),
       saldoMinimo: 0,
       anoInicial,
