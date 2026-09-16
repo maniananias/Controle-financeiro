@@ -126,6 +126,10 @@
   .ajuste-linhas span{display:block;font-size:10.5px;color:var(--ink-faint);margin-bottom:2px;}
   .ajuste-linhas b{display:block;font-size:14px;font-weight:600;}
   .ajuste-resultado{font-size:13px;font-weight:500;padding-top:10px;border-top:1px solid var(--line);line-height:1.4;}
+  .folego-corte-bloco{border-radius:12px;padding:10px 12px;font-size:13px;font-weight:500;line-height:1.4;background:var(--surface-alt);}
+  .folego-corte-bloco.pos{border:1px solid rgba(34,227,178,.28);}
+  .folego-corte-bloco.neg{border:1px solid rgba(255,107,133,.32);}
+  .folego-corte-rotulo{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);font-weight:700;margin:0 0 5px;}
   .ajuste-resultado .valor{font-family:'JetBrains Mono',monospace;font-weight:600;}
   .ajuste-resultado.pos .valor{color:var(--primary);}
   .ajuste-resultado.neg .valor{color:var(--danger);}
@@ -740,7 +744,8 @@
       <div class="field"><label>Esse saldo era de que dia?</label><input type="date" id="cfgDataSaldoInicial"></div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Antes dessa data, o app não soma nem subtrai nenhum lançamento no seu saldo. Ele fica parado nesse valor até chegar nesse dia.</p>
       <div class="field"><label>Dia de recebimento</label><input id="cfgDiaRecebimento" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 25"></div>
-      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) em todo o app: Dashboard, Extrato e Simulação. Se o mês tiver menos dias que esse número (ex: fevereiro), usa o último dia do mês.</p>
+      <div class="field"><label>2º dia de recebimento (opcional, se recebe 2x no mês)</label><input id="cfgDiaRecebimento2" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 15"></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) no Dashboard. Se preencher os dois, o card mostra os dois cortes do mês, lado a lado. O Extrato e a Simulação, por enquanto, continuam usando só o 1º.</p>
       <div class="field"><label>Orçamento mensal</label><input id="cfgOrcamento" inputmode="numeric" placeholder="R$ 0,00"></div>
       <div class="field"><label>Saldo mínimo de alerta (opcional)</label><input id="cfgSaldoMinimo" inputmode="numeric" placeholder="R$ 0,00"></div>
     </div>
@@ -772,7 +777,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.11.0</p>
+      <p class="versao-app">Versão 1.12.0-beta</p>
     </div>
   </section>
 
@@ -1516,39 +1521,68 @@
     }
   }
 
+  // calcula, pra um mês, a véspera de CADA dia de recebimento configurado (1 ou 2) — cada um
+  // usa a mesma regra de sempre: se o recebimento é dia 1, a véspera vira o último dia do mês
+  function diasAntesSalarioDoMes(ano, mes){
+    const resultado = [];
+    if(state.config.diaRecebimento){
+      const d1 = Math.min(state.config.diaRecebimento, daysInMonth(ano,mes));
+      resultado.push(d1 === 1 ? daysInMonth(ano,mes) : d1 - 1);
+    }
+    if(state.config.diaRecebimento2){
+      const d2 = Math.min(state.config.diaRecebimento2, daysInMonth(ano,mes));
+      resultado.push(d2 === 1 ? daysInMonth(ano,mes) : d2 - 1);
+    }
+    return [...new Set(resultado)].sort((a,b)=>a-b);
+  }
   function renderFolego(){
     const box = document.getElementById('folegoBox');
     garantirRecorrencias(filtro.ano, filtro.mes);
-    const diaAnterior = diaAntesSalario(filtro.ano, filtro.mes);
-    if(!diaAnterior){ box.style.display = 'none'; return; }
+    const cortes = diasAntesSalarioDoMes(filtro.ano, filtro.mes);
+    if(cortes.length === 0){ box.style.display = 'none'; return; }
     box.style.display = 'block';
 
     const nomeMes = MESES[filtro.mes] + '/' + filtro.ano;
-
     const dias = saldosDiariosDoMes(filtro.ano, filtro.mes);
-    const saldoFolego = dias[diaAnterior-1].saldo;
-    const isoFolego = isoDate(filtro.ano, filtro.mes, diaAnterior);
-
-    document.getElementById('folegoTitulo').textContent = 'Fôlego de ' + nomeMes + ' (véspera do salário, dia ' + diaAnterior + ')';
-    const el = document.getElementById('folegoResultado');
-    el.className = saldoFolego >= 0 ? 'ajuste-resultado pos' : 'ajuste-resultado neg';
-    let html = saldoFolego >= 0
-      ? 'Sobra <span class="valor">'+fmt(saldoFolego)+'</span> no dia anterior ao salário de '+nomeMes+'.'
-      : 'Falta <span class="valor">'+fmt(Math.abs(saldoFolego))+'</span> no dia anterior ao salário de '+nomeMes+'.';
-    // quanto do saldo de hoje ainda vai ser consumido até lá — só faz sentido no mês ATUAL de verdade,
-    // não em outros meses que você navegar pelo filtro (aí a comparação com "hoje" deixa de fazer sentido)
     const hoje = new Date();
     const estaNoMesAtual = (filtro.ano === hoje.getFullYear() && filtro.mes === hoje.getMonth());
-    if(estaNoMesAtual && isoFolego >= todayISO()){
-      const saldoHoje = saldoAteHoje();
-      const consumo = saldoHoje - saldoFolego;
-      if(consumo > 0){
-        html += '<p style="font-size:12px;color:var(--ink-soft);margin:8px 0 0;font-weight:400;">Do seu saldo de hoje (<span class="mono">'+fmt(saldoHoje)+'</span>), ainda vai sair <span class="mono" style="color:var(--danger);">'+fmt(consumo)+'</span> até lá.</p>';
-      }else if(consumo < 0){
-        html += '<p style="font-size:12px;color:var(--ink-soft);margin:8px 0 0;font-weight:400;">Seu saldo deve crescer <span class="mono" style="color:var(--primary);">'+fmt(Math.abs(consumo))+'</span> até lá, além do que você já tem hoje.</p>';
+    const saldoHoje = estaNoMesAtual ? saldoAteHoje() : null;
+
+    document.getElementById('folegoTitulo').textContent = cortes.length > 1
+      ? 'Fôlego de ' + nomeMes + ' (2 recebimentos no mês)'
+      : 'Fôlego de ' + nomeMes + ' (véspera do salário, dia ' + cortes[0] + ')';
+
+    function corpoCorte(diaAnterior){
+      const saldoFolego = dias[diaAnterior-1].saldo;
+      const isoFolego = isoDate(filtro.ano, filtro.mes, diaAnterior);
+      let html = saldoFolego >= 0
+        ? 'Sobra <span class="valor">'+fmt(saldoFolego)+'</span> no dia anterior ao salário'+(cortes.length===1?' de '+nomeMes:'')+'.'
+        : 'Falta <span class="valor">'+fmt(Math.abs(saldoFolego))+'</span> no dia anterior ao salário'+(cortes.length===1?' de '+nomeMes:'')+'.';
+      if(estaNoMesAtual && isoFolego >= todayISO()){
+        const consumo = saldoHoje - saldoFolego;
+        if(consumo > 0){
+          html += '<p style="font-size:12px;color:var(--ink-soft);margin:8px 0 0;font-weight:400;">Do seu saldo de hoje (<span class="mono">'+fmt(saldoHoje)+'</span>), ainda vai sair <span class="mono" style="color:var(--danger);">'+fmt(consumo)+'</span> até lá.</p>';
+        }else if(consumo < 0){
+          html += '<p style="font-size:12px;color:var(--ink-soft);margin:8px 0 0;font-weight:400;">Seu saldo deve crescer <span class="mono" style="color:var(--primary);">'+fmt(Math.abs(consumo))+'</span> até lá, além do que você já tem hoje.</p>';
+        }
       }
+      return { html, positivo: saldoFolego >= 0 };
     }
-    el.innerHTML = html;
+
+    const el = document.getElementById('folegoResultado');
+    if(cortes.length === 1){
+      const c = corpoCorte(cortes[0]);
+      el.className = 'ajuste-resultado '+(c.positivo?'pos':'neg');
+      el.innerHTML = c.html;
+    }else{
+      el.className = ''; // sem a classe base aqui — cada bloco abaixo tem sua própria borda, evita duplicar
+      el.innerHTML = cortes.map((dia,i) => {
+        const c = corpoCorte(dia);
+        return '<div class="folego-corte-bloco '+(c.positivo?'pos':'neg')+'"'+(i>0?' style="margin-top:10px;"':'')+'>'+
+          '<p class="folego-corte-rotulo">'+(i===0?'1º':'2º')+' corte · dia '+dia+'</p>'+c.html+
+        '</div>';
+      }).join('');
+    }
   }
 
   function renderAjusteFinanceiro(){
@@ -2959,20 +2993,30 @@
     origens.sort((a,b) => b.data.localeCompare(a.data));
     return origens[0].valor;
   }
+  let saldoInicialAoAbrirTela = 0;
   function renderConfig(){
     document.getElementById('anoInicialLabel').textContent = state.config.anoInicial;
     setMoneyValue(document.getElementById('cfgSalarioMensal'), state.config.salarioMensal || 0);
+    saldoInicialAoAbrirTela = state.config.saldoInicial;
     setMoneyValue(document.getElementById('cfgSaldoInicial'), state.config.saldoInicial);
     document.getElementById('cfgDataSaldoInicial').value = state.config.dataSaldoInicial || '';
     setMoneyValue(document.getElementById('cfgOrcamento'), state.config.orcamentoMensal);
     setMoneyValue(document.getElementById('cfgSaldoMinimo'), state.config.saldoMinimo);
     document.getElementById('cfgDiaRecebimento').value = state.config.diaRecebimento || '';
+    document.getElementById('cfgDiaRecebimento2').value = state.config.diaRecebimento2 || '';
     setMoneyValue(document.getElementById('cfgDiarioValor'), valorDiarioPadraoAtual());
   }
   bindMoney(document.getElementById('cfgSalarioMensal'), c => { state.config.salarioMensal = c; });
   document.getElementById('cfgSalarioMensal').addEventListener('blur', () => salvarConfig());
   bindMoney(document.getElementById('cfgSaldoInicial'), c => { state.config.saldoInicial = c; });
-  document.getElementById('cfgSaldoInicial').addEventListener('blur', () => { limparCache(); salvarConfig(); });
+  document.getElementById('cfgSaldoInicial').addEventListener('blur', async () => {
+    if(state.config.saldoInicial === 0 && saldoInicialAoAbrirTela > 0){
+      const ok = await confirmarApp('O Saldo inicial vai mudar de '+fmt(saldoInicialAoAbrirTela)+' pra R$ 0,00. Foi isso mesmo que você quis fazer?', 'Confirmar Saldo inicial');
+      if(!ok){ state.config.saldoInicial = saldoInicialAoAbrirTela; setMoneyValue(document.getElementById('cfgSaldoInicial'), saldoInicialAoAbrirTela); return; }
+    }
+    saldoInicialAoAbrirTela = state.config.saldoInicial;
+    limparCache(); salvarConfig();
+  });
   document.getElementById('cfgDataSaldoInicial').addEventListener('change', e => {
     state.config.dataSaldoInicial = e.target.value || null;
     limparCache(); salvarConfig();
@@ -2985,6 +3029,14 @@
     const v = Math.max(1, Math.min(31, Number(e.target.value) || 0));
     if(v > 0){ state.config.diaRecebimento = v; limparCache(); salvarConfig(); }
     e.target.value = state.config.diaRecebimento || '';
+  });
+  document.getElementById('cfgDiaRecebimento2').addEventListener('change', e => {
+    const raw = e.target.value;
+    if(!raw){ state.config.diaRecebimento2 = null; salvarConfig(); return; }
+    const v = Math.max(1, Math.min(31, Number(raw) || 0));
+    state.config.diaRecebimento2 = v > 0 ? v : null;
+    e.target.value = state.config.diaRecebimento2 || '';
+    salvarConfig();
   });
   bindMoney(document.getElementById('cfgSaldoReal'));
   bindMoney(document.getElementById('cfgDiarioValor'));
