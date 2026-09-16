@@ -618,6 +618,7 @@
 
     <div id="resultadoSimulacao" style="display:none;">
       <div class="sim-veredito" id="simResumo"></div>
+      <div class="sim-veredito neg" id="simAvisoMesTotal" style="display:none;font-size:12.5px;margin-top:-6px;"></div>
       <div class="ajuste-box" id="simFolegoBox" style="display:none;">
         <p class="ajuste-titulo">Fôlego mês a mês: com x sem essa decisão</p>
         <div id="simFolegoLista"></div>
@@ -2083,6 +2084,20 @@
       resumo.innerHTML = primeiro.simulado < 0
         ? '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeMes+' seu saldo fica negativo (<span class="valor">'+fmt(Math.abs(primeiro.simulado))+'</span> no vermelho) por causa dessa decisão.'
         : '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeMes+' seu saldo fica abaixo da reserva mínima de '+fmt(limiteSeguranca)+' (sobra só <span class="valor">'+fmt(primeiro.simulado)+'</span>) por causa dessa decisão.';
+    }
+
+    // segundo aviso: o Fôlego só olha até a véspera do salário — se tiver uma conta vencendo DEPOIS
+    // disso, dentro do mesmo mês, o Fôlego não pegaria. Aqui a gente cruza com o saldo acumulado do
+    // mês inteiro, pra avisar mesmo quando o Fôlego daquele mês deu positivo.
+    const mesesFolegoOk = new Set(folegoResultados.filter(r => r.simulado >= limiteSeguranca).map(r => r.ano+'-'+r.mes));
+    const riscoDepoisDoFolego = resultados.find(r => r.simulado < 0 && mesesFolegoOk.has(r.ano+'-'+r.mes));
+    const avisoExtra = document.getElementById('simAvisoMesTotal');
+    if(riscoDepoisDoFolego){
+      const nomeMes2 = MESES[riscoDepoisDoFolego.mes]+'/'+riscoDepoisDoFolego.ano;
+      avisoExtra.innerHTML = '⚠️ Mesmo com o Fôlego de '+nomeMes2+' dando positivo, o mês inteiro fecha no vermelho (<span class="valor">'+fmt(Math.abs(riscoDepoisDoFolego.simulado))+'</span>) — deve ter uma conta vencendo depois do salário.';
+      avisoExtra.style.display = 'block';
+    }else{
+      avisoExtra.style.display = 'none';
     }
 
     const folegoBox = document.getElementById('simFolegoBox');
