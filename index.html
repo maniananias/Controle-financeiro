@@ -692,6 +692,42 @@
     <button class="btn-secundario" id="btnLancarFerias" style="width:100%;display:none;">Lançar como Entrada</button>
   </section>
 
+  <!-- ===== CALCULADORA DE 13º SALÁRIO ===== -->
+  <section class="screen" id="screen-decimo">
+    <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">🎄</span></button><h1>13º Salário</h1></div><button class="btn-fechar-tela" id="btnFecharDecimo" type="button">✕ Fechar</button></div>
+    <p class="sim-intro">Calcule as duas parcelas do seu 13º, seguindo a regra da CLT. Nada é lançado até você confirmar.</p>
+
+    <div class="field"><label>Seu salário mensal</label><input id="decimoSalario" inputmode="numeric" placeholder="R$ 0,00"></div>
+    <div class="field"><label>Meses trabalhados no ano</label><input type="number" id="decimoMeses" inputmode="numeric" min="1" max="12" value="12"></div>
+    <p class="ferias-dica">Trabalhou o ano inteiro? Deixa 12. Cada mês com 15 dias ou mais trabalhados conta como 1 mês inteiro pra essa conta.</p>
+
+    <div class="field"><label>Data da 1ª parcela</label><input type="date" id="decimoData1"></div>
+    <div class="field"><label>Data da 2ª parcela</label><input type="date" id="decimoData2"></div>
+
+    <div class="field"><label>Desconto estimado na 2ª parcela (INSS + IR, opcional)</label><input id="decimoDesconto" inputmode="numeric" placeholder="R$ 0,00"></div>
+    <p class="ferias-dica">A 1ª parcela nunca tem desconto, por lei. O desconto (INSS/IR) é calculado em cima do 13º inteiro e só sai da 2ª parcela — o app não tenta adivinhar isso sozinho, se já recebeu antes pode conferir no holerite.</p>
+
+    <div class="ajuste-box" id="decimoResultadoBox" style="display:none;">
+      <p class="ajuste-titulo">Valor calculado</p>
+      <div class="ajuste-linhas"><div><span>13º proporcional (<span id="decimoMesesTexto"></span>)</span><b class="mono pos" id="decimoProporcionalValor"></b></div></div>
+      <div class="ferias-resultado-linha ferias-resultado-exato">
+        <span class="ferias-resultado-tag">✅ 1ª parcela · sem desconto</span>
+        <div id="decimoPrimeiraLinha"></div>
+      </div>
+      <div class="ferias-resultado-linha ferias-resultado-exato" style="margin-top:8px;">
+        <span class="ferias-resultado-tag">✅ 2ª parcela bruta</span>
+        <div id="decimoSegundaBrutaLinha"></div>
+      </div>
+      <div class="ferias-resultado-linha ferias-resultado-estimativa" id="decimoLinhaLiquida" style="display:none;">
+        <span class="ferias-resultado-tag">🧮 2ª parcela líquida · estimativa</span>
+        <div id="decimoSegundaLiquidaLinha"></div>
+      </div>
+    </div>
+
+    <button class="btn-primario" id="btnCalcularDecimo" style="width:100%;margin:6px 0 12px;">Calcular</button>
+    <button class="btn-secundario" id="btnLancarDecimo" style="width:100%;display:none;">Lançar as duas parcelas</button>
+  </section>
+
   <!-- ===== CONFIGURAÇÕES ===== -->
   <section class="screen" id="screen-config">
     <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Configurações</h1></div></div>
@@ -734,7 +770,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.11.0</p>
+      <p class="versao-app">Versão 1.10.0</p>
     </div>
   </section>
 
@@ -767,6 +803,7 @@
         <button class="mais-item" data-screen="metas"><span class="mais-ico">🎯</span>Metas financeiras</button>
         <button class="mais-item" data-screen="simulacao"><span class="mais-ico">🔮</span>Simular uma decisão</button>
         <button class="mais-item" data-screen="ferias"><span class="mais-ico">🏖️</span>Calcular férias</button>
+        <button class="mais-item" data-screen="decimo"><span class="mais-ico">🎄</span>Calcular 13º salário</button>
         <button class="mais-item" data-screen="config"><span class="mais-ico">⚙️</span>Configurações</button>
       </div>
     </div>
@@ -926,17 +963,17 @@
 <script>
 (function(){
   // ================= constantes =================
-  const CATEGORIAS = ['Salário','Férias','Alimentação','Transporte','Moradia','Contas','Lazer','Saúde','Compras','Educação','Outros'];
+  const CATEGORIAS = ['Salário','Férias','13º Salário','Alimentação','Transporte','Moradia','Contas','Lazer','Saúde','Compras','Educação','Outros'];
   const FORMAS = ['Dinheiro','Pix','Débito','Crédito','Transferência','Outros'];
   const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const CAT_CORES = {
-    'Salário':'#22E3B2','Férias':'#3FD0E0','Alimentação':'#FF9F5A','Transporte':'#6C7CFF','Moradia':'#B98CFF',
+    'Salário':'#22E3B2','Férias':'#3FD0E0','13º Salário':'#B98CFF','Alimentação':'#FF9F5A','Transporte':'#6C7CFF','Moradia':'#B98CFF',
     'Contas':'#8CA0BE','Lazer':'#FF6FB1','Saúde':'#FF6B85','Compras':'#FFB449',
     'Educação':'#3FD0E0','Outros':'#7A8AA0','Gasto Diário':'#5C6B80'
   };
   const CAT_ICONES = {
-    'Salário':'💼','Férias':'🏖️','Alimentação':'🍔','Transporte':'🚗','Moradia':'🏠',
+    'Salário':'💼','Férias':'🏖️','13º Salário':'🎄','Alimentação':'🍔','Transporte':'🚗','Moradia':'🏠',
     'Contas':'🧾','Lazer':'🎮','Saúde':'💊','Compras':'🛍️',
     'Educação':'📚','Outros':'🔖','Gasto Diário':'🔁'
   };
@@ -1362,7 +1399,7 @@
   new MutationObserver(atualizarTravaFundo).observe(document.body, { attributes:true, attributeFilter:['class'], subtree:true });
 
   // ================= navegação =================
-  const SCREEN_ORDER = ['dashboard','movs','relatorios','metas','simulacao','ferias','config'];
+  const SCREEN_ORDER = ['dashboard','movs','relatorios','metas','simulacao','ferias','decimo','config'];
   const TELAS_COM_BOTAO_NOVA = ['movs'];
   const TELAS_COM_BOTAO_DIARIO = ['dashboard'];
   function irPara(tela){
@@ -1388,10 +1425,12 @@
     if(tela === 'config') renderConfig();
     if(tela === 'simulacao') renderSimulacaoTela();
     if(tela === 'ferias') renderFeriasTela();
+    if(tela === 'decimo') renderDecimoTela();
   }
   document.getElementById('btnAtalhoSimular').addEventListener('click', () => irPara('simulacao'));
   document.getElementById('btnFecharSimulacao').addEventListener('click', () => irPara('dashboard'));
   document.getElementById('btnFecharFerias').addEventListener('click', () => irPara('dashboard'));
+  document.getElementById('btnFecharDecimo').addEventListener('click', () => irPara('dashboard'));
   function abrirMenuPrincipal(){
     const atual = document.querySelector('.screen.active').id.replace('screen-','');
     document.querySelectorAll('.mais-item').forEach(b => b.classList.toggle('mais-item-atual', b.dataset.screen === atual));
@@ -1830,6 +1869,75 @@
     limparCache();
     await salvarMovimentacoes();
     mostrarToast('Férias lançadas');
+    irPara('dashboard');
+  });
+
+  // ================= CALCULADORA DE 13º SALÁRIO =================
+  // regra da CLT: 13º proporcional aos meses trabalhados (cada mês com 15+ dias conta como 1/12 de um salário).
+  // 1ª parcela: metade do proporcional, sem nenhum desconto, até 30/nov. 2ª parcela: o resto, com o desconto de
+  // INSS/IR calculado sobre o 13º INTEIRO (não só a 2ª parcela) — por isso o desconto só se aplica aqui.
+  function calcularDecimoTerceiro(salarioCents, mesesTrabalhados){
+    const proporcional = Math.round(salarioCents / 12 * mesesTrabalhados);
+    const primeiraParcela = Math.round(proporcional / 2);
+    const segundaParcelaBruta = proporcional - primeiraParcela;
+    return { proporcional, primeiraParcela, segundaParcelaBruta };
+  }
+  let ultimoCalculoDecimo = null;
+  function renderDecimoTela(){
+    setMoneyValue(document.getElementById('decimoSalario'), valorSalarioAtual());
+    document.getElementById('decimoMeses').value = 12;
+    document.getElementById('decimoDesconto').value = '';
+    const hoje = new Date();
+    document.getElementById('decimoData1').value = isoDate(hoje.getFullYear(), 10, 30); // 30/nov
+    document.getElementById('decimoData2').value = isoDate(hoje.getFullYear(), 11, 20); // 20/dez
+    document.getElementById('decimoResultadoBox').style.display = 'none';
+    document.getElementById('btnLancarDecimo').style.display = 'none';
+    ultimoCalculoDecimo = null;
+  }
+  bindMoney(document.getElementById('decimoSalario'));
+  bindMoney(document.getElementById('decimoDesconto'));
+  document.getElementById('btnCalcularDecimo').addEventListener('click', () => {
+    const salario = centsFromInput(document.getElementById('decimoSalario'));
+    if(salario <= 0){ mostrarToast('Informe seu salário'); return; }
+    const meses = Math.min(12, Math.max(1, Number(document.getElementById('decimoMeses').value) || 12));
+    const data1 = document.getElementById('decimoData1').value || isoDate(new Date().getFullYear(),10,30);
+    const data2 = document.getElementById('decimoData2').value || isoDate(new Date().getFullYear(),11,20);
+    const desconto = centsFromInput(document.getElementById('decimoDesconto'));
+    const r = calcularDecimoTerceiro(salario, meses);
+    const segundaLiquida = Math.max(0, r.segundaParcelaBruta - desconto);
+    ultimoCalculoDecimo = Object.assign({ salario, meses, data1, data2, desconto, segundaLiquida }, r);
+
+    document.getElementById('decimoMesesTexto').textContent = meses+' de 12 meses';
+    document.getElementById('decimoProporcionalValor').textContent = fmt(r.proporcional);
+    document.getElementById('decimoPrimeiraLinha').innerHTML = 'Dá '+fmt(r.primeiraParcela)+' em '+formatBR(data1);
+    document.getElementById('decimoSegundaBrutaLinha').innerHTML = 'Dá '+fmt(r.segundaParcelaBruta)+' em '+formatBR(data2);
+    const linhaLiquida = document.getElementById('decimoLinhaLiquida');
+    if(desconto > 0){
+      document.getElementById('decimoSegundaLiquidaLinha').innerHTML = 'Com o desconto, fica <b class="mono">'+fmt(segundaLiquida)+'</b>';
+      linhaLiquida.style.display = 'block';
+    }else{
+      linhaLiquida.style.display = 'none';
+    }
+    document.getElementById('decimoResultadoBox').style.display = 'block';
+    document.getElementById('btnLancarDecimo').style.display = 'block';
+  });
+  document.getElementById('btnLancarDecimo').addEventListener('click', async () => {
+    if(!ultimoCalculoDecimo) return;
+    const d = ultimoCalculoDecimo;
+    if(!await confirmarApp('Isso vai lançar duas entradas: '+fmt(d.primeiraParcela)+' em '+formatBR(d.data1)+' e '+fmt(d.segundaLiquida)+' em '+formatBR(d.data2)+'. Continuar?', 'Lançar 13º salário')) return;
+    state.movimentacoes.push({
+      id: uid(), data: d.data1, tipo:'entrada', valor: d.primeiraParcela,
+      categoria:'13º Salário', descricao:'1ª parcela do 13º', formaPagamento:'Transferência',
+      recorrente:false, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm:new Date().toISOString()
+    });
+    state.movimentacoes.push({
+      id: uid(), data: d.data2, tipo:'entrada', valor: d.segundaLiquida,
+      categoria:'13º Salário', descricao:'2ª parcela do 13º'+(d.desconto>0?' (líquido)':''), formaPagamento:'Transferência',
+      recorrente:false, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm:new Date().toISOString()
+    });
+    limparCache();
+    await salvarMovimentacoes();
+    mostrarToast('13º salário lançado');
     irPara('dashboard');
   });
 
