@@ -697,6 +697,8 @@
     <div class="config-section">
       <h3>📊 Perfil financeiro</h3>
       <div class="field"><label>Saldo inicial (ano de início: <span id="anoInicialLabel"></span>)</label><input id="cfgSaldoInicial" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Esse saldo era de que dia?</label><input type="date" id="cfgDataSaldoInicial"></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Antes dessa data, o app não soma nem subtrai nenhum lançamento no seu saldo — ele fica parado nesse valor até chegar nesse dia.</p>
       <div class="field"><label>Dia de recebimento</label><input id="cfgDiaRecebimento" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 25"></div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) em todo o app: Dashboard, Extrato e Simulação. Se o mês tiver menos dias que esse número (ex: fevereiro), usa o último dia do mês.</p>
       <div class="field"><label>Orçamento mensal</label><input id="cfgOrcamento" inputmode="numeric" placeholder="R$ 0,00"></div>
@@ -730,7 +732,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.9.1</p>
+      <p class="versao-app">Versão 1.9.2</p>
     </div>
   </section>
 
@@ -1154,8 +1156,12 @@
     if(saldoCache[key] !== undefined) return saldoCache[key];
     let saldo = saldoInicialDoMes(ano,mes);
     const n = daysInMonth(ano,mes);
+    const dataAncora = state.config.dataSaldoInicial;
     for(let d=1; d<=n; d++){
-      const t = totaisDoDia(isoDate(ano,mes,d));
+      const iso = isoDate(ano,mes,d);
+      // antes do dia em que o saldo inicial foi informado, não acumula nada — esse valor já é o saldo real daquele dia
+      if(dataAncora && iso < dataAncora) continue;
+      const t = totaisDoDia(iso);
       saldo += t.entradas - t.saidas - t.diario;
     }
     saldoCache[key] = saldo;
@@ -1166,10 +1172,15 @@
     let saldo = saldoInicialDoMes(ano,mes);
     const n = daysInMonth(ano,mes);
     const arr = [];
+    const dataAncora = state.config.dataSaldoInicial;
     for(let d=1; d<=n; d++){
       const iso = isoDate(ano,mes,d);
       const t = totaisDoDia(iso);
-      saldo += t.entradas - t.saidas - t.diario;
+      // antes do dia em que o saldo inicial foi informado, o saldo fica travado nesse valor (não acumula
+      // lançamentos retroativos) — os valores do dia continuam aparecendo normal no Extrato, só não mexem no saldo
+      if(!dataAncora || iso >= dataAncora){
+        saldo += t.entradas - t.saidas - t.diario;
+      }
       arr.push({dia:d, iso, saldo, ...t});
     }
     return arr;
@@ -1350,7 +1361,7 @@
 
   // ================= navegação =================
   const SCREEN_ORDER = ['dashboard','movs','relatorios','metas','simulacao','ferias','config'];
-  const TELAS_COM_BOTAO_NOVA = ['movs','metas'];
+  const TELAS_COM_BOTAO_NOVA = ['movs'];
   const TELAS_COM_BOTAO_DIARIO = ['dashboard'];
   function irPara(tela){
     const atualEl = document.querySelector('.screen.active');
@@ -2759,7 +2770,9 @@
       document.getElementById('metaId').value = '';
       document.getElementById('metaNome').value = '';
       document.getElementById('metaValor').value = '';
-      document.getElementById('metaPrazo').value = '';
+      const d = new Date();
+      d.setMonth(d.getMonth()+3); // sugestão de prazo padrão (3 meses), editável — só pra não ficar em branco
+      document.getElementById('metaPrazo').value = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
     }
     document.getElementById('modalMeta').classList.add('show');
   }
@@ -2819,6 +2832,7 @@
   function renderConfig(){
     document.getElementById('anoInicialLabel').textContent = state.config.anoInicial;
     setMoneyValue(document.getElementById('cfgSaldoInicial'), state.config.saldoInicial);
+    document.getElementById('cfgDataSaldoInicial').value = state.config.dataSaldoInicial || '';
     setMoneyValue(document.getElementById('cfgOrcamento'), state.config.orcamentoMensal);
     setMoneyValue(document.getElementById('cfgSaldoMinimo'), state.config.saldoMinimo);
     document.getElementById('cfgDiaRecebimento').value = state.config.diaRecebimento || '';
@@ -2826,6 +2840,10 @@
   }
   bindMoney(document.getElementById('cfgSaldoInicial'), c => { state.config.saldoInicial = c; });
   document.getElementById('cfgSaldoInicial').addEventListener('blur', () => { limparCache(); salvarConfig(); });
+  document.getElementById('cfgDataSaldoInicial').addEventListener('change', e => {
+    state.config.dataSaldoInicial = e.target.value || null;
+    limparCache(); salvarConfig();
+  });
   bindMoney(document.getElementById('cfgOrcamento'), c => { state.config.orcamentoMensal = c; });
   document.getElementById('cfgOrcamento').addEventListener('blur', () => salvarConfig());
   bindMoney(document.getElementById('cfgSaldoMinimo'), c => { state.config.saldoMinimo = c; });
@@ -3026,6 +3044,7 @@
     const diarioValorInicial = centsFromInput(document.getElementById('wDiarioValor'));
     state.config = {
       saldoInicial: centsFromInput(document.getElementById('wSaldoInicial')),
+      dataSaldoInicial: todayISO(),
       orcamentoMensal: centsFromInput(document.getElementById('wOrcamento')),
       saldoMinimo: 0,
       anoInicial,
