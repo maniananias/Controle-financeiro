@@ -329,7 +329,7 @@
   .meta-track{height:9px;background:var(--surface-alt);border-radius:5px;overflow:hidden;margin:8px 0 8px;}
   .meta-fill{height:100%;background:var(--gold);border-radius:5px;}
   .meta-fill.completa{background:var(--primary);}
-  .meta-linhas{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-soft);}
+  .meta-linhas{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 8px;font-size:11.5px;color:var(--ink-soft);}
   .meta-acoes{display:flex;gap:8px;margin-top:10px;}
   .meta-acoes button{flex:1;padding:8px;border-radius:9px;border:1px solid var(--line);background:var(--surface-alt);font-size:12px;font-weight:600;cursor:pointer;}
 
@@ -393,6 +393,8 @@
     position:fixed;inset:0;background:rgba(16,24,40,.45);display:none;align-items:flex-end;justify-content:center;z-index:100;
   }
   .modal-overlay.show{display:flex;}
+  /* confirmações precisam sempre aparecer por cima de qualquer outro modal que já esteja aberto (ex: excluir dentro de editar) */
+  #modalConfirmar{z-index:200;}
   .modal-sheet{
     background:var(--surface);width:100%;max-width:480px;border-radius:20px 20px 0 0;
     padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;overflow-x:hidden;
@@ -732,7 +734,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.9.2</p>
+      <p class="versao-app">Versão 1.11.0</p>
     </div>
   </section>
 
@@ -790,7 +792,7 @@
         </div>
       </div>
       <div class="field"><label>Categoria</label><select id="movCategoria"></select></div>
-      <div class="field"><label>Descrição (opcional)</label><input type="text" id="movDescricao" placeholder="Ex: almoço com a equipe"></div>
+      <div class="field"><label>Descrição (opcional)</label><input type="text" id="movDescricao" placeholder="Ex: farmácia, gasolina, presente..."></div>
       <div class="field"><label>Forma de pagamento</label><select id="movForma"></select></div>
       <div class="checkbox-row" id="checkboxRecorrenteMensal"><input type="checkbox" id="movRecorrente"><label for="movRecorrente">Repetir todo mês</label></div>
       <div class="field" id="campoRecorrenteAte" style="display:none;"><label>Repetir por quantos meses? (deixe vazio para repetir sempre)</label><input type="number" id="movRecorrenteQtd" inputmode="numeric" min="1" placeholder="Ex: 5"></div>
@@ -2738,7 +2740,17 @@
   // ================= METAS =================
   function renderMetas(){
     const el = document.getElementById('listaMetas');
-    if(state.metas.length === 0){ el.innerHTML = '<div class="empty-state"><span class="ico-grande">🎯</span>Nenhuma meta ainda. Que tal criar a primeira?</div>'; return; }
+    if(state.metas.length === 0){ el.innerHTML = '<div class="empty-state"><span class="ico-grande">🎯</span>Nenhuma meta ainda. Que tal criar a primeira?</div>'+
+      '<div class="ajuste-box" style="margin-top:14px;">'+
+        '<p class="ajuste-titulo">💡 Ideias do que dá pra cadastrar aqui</p>'+
+        '<p style="font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:0;">'+
+          '🚗 <b>IPVA / IPTU / seguro do carro</b> — contas anuais, pra ir guardando aos poucos<br>'+
+          '✈️ <b>Viagem</b> — juntar pra uma passagem ou hospedagem<br>'+
+          '🛟 <b>Reserva de emergência</b> — um colchão de segurança pra imprevistos<br>'+
+          '📱 <b>Trocar de aparelho</b> — celular, notebook, eletrodoméstico<br>'+
+          '🎁 <b>Data especial</b> — presente de fim de ano, aniversário'+
+        '</p>'+
+      '</div>'; return; }
     el.innerHTML = state.metas.map(meta => {
       const pct = Math.min(100, (meta.valorAtual/meta.valorObjetivo)*100 || 0);
       const falta = Math.max(0, meta.valorObjetivo - meta.valorAtual);
@@ -2749,7 +2761,7 @@
         '<div class="meta-top"><span class="meta-nome">🎯 '+meta.nome+'</span><span class="meta-prazo">até '+formatBR(meta.dataLimite)+'</span></div>'+
         '<div class="meta-track"><div class="meta-fill'+(pct>=100?' completa':'')+'" style="width:'+pct+'%"></div></div>'+
         '<div class="meta-linhas"><span>'+fmt(meta.valorAtual)+' de '+fmt(meta.valorObjetivo)+'</span><span>'+pct.toFixed(0)+'%</span></div>'+
-        (falta>0 ? '<div class="meta-linhas" style="margin-top:4px;"><span>Falta '+fmt(falta)+'</span><span>~'+fmt(porMes)+'/mês</span></div>' : '<div class="meta-linhas" style="margin-top:4px;color:#22E3B2;">Meta concluída 🎉</div>')+
+        (falta>0 ? '<div class="meta-linhas" style="margin-top:4px;"><span>Falta '+fmt(falta)+'</span><span>~'+fmt(porMes)+'/mês · '+mesesRestantes+' '+(mesesRestantes===1?'pagamento':'pagamentos')+'</span></div>' : '<div class="meta-linhas" style="margin-top:4px;color:#22E3B2;">Meta concluída 🎉</div>')+
         '<div class="meta-acoes"><button class="btn-aporte">Guardar valor</button><button class="btn-editar-meta">Editar</button></div>'+
       '</div>';
     }).join('');
