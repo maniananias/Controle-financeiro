@@ -730,7 +730,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.9.0</p>
+      <p class="versao-app">Versão 1.9.1</p>
     </div>
   </section>
 
@@ -2764,7 +2764,7 @@
     document.getElementById('modalMeta').classList.add('show');
   }
   bindMoney(document.getElementById('metaValor'));
-  document.getElementById('btnSalvarMeta').addEventListener('click', () => {
+  document.getElementById('btnSalvarMeta').addEventListener('click', async () => {
     const nome = document.getElementById('metaNome').value.trim();
     const valor = centsFromInput(document.getElementById('metaValor'));
     const prazo = document.getElementById('metaPrazo').value;
@@ -2776,7 +2776,7 @@
     }else{
       state.metas.push({ id: uid(), nome, valorObjetivo: valor, valorAtual:0, dataInicio: todayISO(), dataLimite: prazo, status:'ativa' });
     }
-    salvarMetas();
+    await salvarMetas();
     document.getElementById('modalMeta').classList.remove('show');
     renderMetas();
   });
@@ -2784,7 +2784,7 @@
     const id = document.getElementById('metaId').value;
     if(!await confirmarApp('Excluir esta meta?', 'Excluir meta')) return;
     state.metas = state.metas.filter(m=>m.id!==id);
-    salvarMetas();
+    await salvarMetas();
     document.getElementById('modalMeta').classList.remove('show');
     renderMetas();
   });
@@ -2796,14 +2796,14 @@
     document.getElementById('modalAporte').classList.add('show');
   }
   bindMoney(document.getElementById('aporteValor'));
-  document.getElementById('btnSalvarAporte').addEventListener('click', () => {
+  document.getElementById('btnSalvarAporte').addEventListener('click', async () => {
     const id = document.getElementById('aporteMetaId').value;
     const valor = centsFromInput(document.getElementById('aporteValor'));
     if(valor<=0) return;
     const meta = state.metas.find(m=>m.id===id);
     meta.valorAtual += valor;
     if(meta.valorAtual >= meta.valorObjetivo) meta.status = 'concluida';
-    salvarMetas();
+    await salvarMetas();
     document.getElementById('modalAporte').classList.remove('show');
     mostrarToast('Valor guardado na meta');
     renderMetas();
