@@ -608,7 +608,12 @@
     <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Simular decisão</h1></div><button class="btn-fechar-tela" id="btnFecharSimulacao" type="button">✕ Fechar</button></div>
     <p class="sim-intro">Antes de gastar alguma coisa, teste aqui o impacto real nos próximos 12 meses. Nada é lançado até você confirmar.</p>
 
-    <div class="field"><label>Valor</label><input id="simValor" inputmode="numeric" placeholder="R$ 0,00"></div>
+    <div class="field"><label>Valor</label>
+      <div class="valor-soma-row">
+        <input id="simValor" inputmode="numeric" placeholder="R$ 0,00">
+        <button type="button" class="btn-somar" data-somar="simValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+      </div>
+    </div>
     <div class="field"><label>Data</label><input type="date" id="simData"></div>
     <div class="field"><label>Categoria</label><select id="simCategoria"></select></div>
     <div class="checkbox-row"><input type="checkbox" id="simRecorrente"><label for="simRecorrente">Repetir todo mês</label></div>
@@ -644,7 +649,12 @@
       <button type="button" id="feriasBtnParcial">Tirar parte + vender parte</button>
     </div>
 
-    <div class="field"><label>Seu salário mensal</label><input id="feriasSalario" inputmode="numeric" placeholder="R$ 0,00"></div>
+    <div class="field"><label>Seu salário mensal</label>
+      <div class="valor-soma-row">
+        <input id="feriasSalario" inputmode="numeric" placeholder="R$ 0,00">
+        <button type="button" class="btn-somar" data-somar="feriasSalario" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+      </div>
+    </div>
 
     <div class="field"><label>Data que vai tirar as férias</label><input type="date" id="feriasDataInicio"></div>
 
@@ -658,7 +668,12 @@
 
     <div class="field"><label>Data que espera receber</label><input type="date" id="feriasData"></div>
 
-    <div class="field"><label>Desconto estimado (INSS + IR, opcional)</label><input id="feriasDesconto" inputmode="numeric" placeholder="R$ 0,00"></div>
+    <div class="field"><label>Desconto estimado (INSS + IR, opcional)</label>
+      <div class="valor-soma-row">
+        <input id="feriasDesconto" inputmode="numeric" placeholder="R$ 0,00">
+        <button type="button" class="btn-somar" data-somar="feriasDesconto" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+      </div>
+    </div>
     <p class="ferias-dica">Não sabe o valor? Deixa em branco. O app não tenta adivinhar isso, essas tabelas são complexas e mudam com frequência. Se já tirou férias antes, dá pra olhar no seu holerite anterior quanto foi descontado.</p>
 
     <div class="ajuste-box" id="feriasResultadoBox" style="display:none;">
@@ -702,14 +717,24 @@
     <div class="topbar"><div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">🎄</span></button><h1>13º Salário</h1></div><button class="btn-fechar-tela" id="btnFecharDecimo" type="button">✕ Fechar</button></div>
     <p class="sim-intro">Calcule as duas parcelas do seu 13º, seguindo a regra da CLT. Nada é lançado até você confirmar.</p>
 
-    <div class="field"><label>Seu salário mensal</label><input id="decimoSalario" inputmode="numeric" placeholder="R$ 0,00"></div>
+    <div class="field"><label>Seu salário mensal</label>
+      <div class="valor-soma-row">
+        <input id="decimoSalario" inputmode="numeric" placeholder="R$ 0,00">
+        <button type="button" class="btn-somar" data-somar="decimoSalario" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+      </div>
+    </div>
     <div class="field"><label>Meses trabalhados no ano</label><input type="number" id="decimoMeses" inputmode="numeric" min="1" max="12" value="12"></div>
     <p class="ferias-dica">Trabalhou o ano inteiro? Deixa 12. Cada mês com 15 dias ou mais trabalhados conta como 1 mês inteiro pra essa conta.</p>
 
     <div class="field"><label>Data da 1ª parcela</label><input type="date" id="decimoData1"></div>
     <div class="field"><label>Data da 2ª parcela</label><input type="date" id="decimoData2"></div>
 
-    <div class="field"><label>Desconto estimado na 2ª parcela (INSS + IR, opcional)</label><input id="decimoDesconto" inputmode="numeric" placeholder="R$ 0,00"></div>
+    <div class="field"><label>Desconto estimado na 2ª parcela (INSS + IR, opcional)</label>
+      <div class="valor-soma-row">
+        <input id="decimoDesconto" inputmode="numeric" placeholder="R$ 0,00">
+        <button type="button" class="btn-somar" data-somar="decimoDesconto" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+      </div>
+    </div>
     <p class="ferias-dica">A 1ª parcela nunca tem desconto, por lei. O desconto (INSS/IR) é calculado em cima do 13º inteiro e só sai da 2ª parcela. O app não tenta adivinhar isso sozinho; se já recebeu antes, pode conferir no holerite.</p>
 
     <div class="ajuste-box" id="decimoResultadoBox" style="display:none;">
@@ -739,22 +764,47 @@
 
     <div class="config-section">
       <h3>📊 Perfil financeiro</h3>
-      <div class="field"><label>Salário mensal</label><input id="cfgSalarioMensal" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Salário mensal</label>
+        <div class="valor-soma-row">
+          <input id="cfgSalarioMensal" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="cfgSalarioMensal" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+        </div>
+      </div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra pré-preencher as calculadoras de Férias e 13º salário. Mudou de valor? Só atualizar aqui.</p>
-      <div class="field"><label>Saldo inicial (ano de início: <span id="anoInicialLabel"></span>)</label><input id="cfgSaldoInicial" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Saldo inicial (ano de início: <span id="anoInicialLabel"></span>)</label>
+        <div class="valor-soma-row">
+          <input id="cfgSaldoInicial" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="cfgSaldoInicial" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+        </div>
+      </div>
       <div class="field"><label>Esse saldo era de que dia?</label><input type="date" id="cfgDataSaldoInicial"></div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Antes dessa data, o app não soma nem subtrai nenhum lançamento no seu saldo. Ele fica parado nesse valor até chegar nesse dia.</p>
       <div class="field"><label>Dia de recebimento</label><input id="cfgDiaRecebimento" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 25"></div>
       <div class="field"><label>2º dia de recebimento (opcional, se recebe 2x no mês)</label><input id="cfgDiaRecebimento2" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 15"></div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Usado pra calcular o Fôlego (véspera do salário) no Dashboard. Se preencher os dois, o card mostra os dois cortes do mês, lado a lado. O Extrato e a Simulação, por enquanto, continuam usando só o 1º.</p>
-      <div class="field"><label>Orçamento mensal</label><input id="cfgOrcamento" inputmode="numeric" placeholder="R$ 0,00"></div>
-      <div class="field"><label>Saldo mínimo de alerta (opcional)</label><input id="cfgSaldoMinimo" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Orçamento mensal</label>
+        <div class="valor-soma-row">
+          <input id="cfgOrcamento" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="cfgOrcamento" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+        </div>
+      </div>
+      <div class="field"><label>Saldo mínimo de alerta (opcional)</label>
+        <div class="valor-soma-row">
+          <input id="cfgSaldoMinimo" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="cfgSaldoMinimo" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+        </div>
+      </div>
     </div>
 
     <div class="config-section">
       <h3>🎯 Ajustes</h3>
       <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Se o saldo atual do app não bate com o que você tem de verdade na conta hoje, digite o valor real aqui. O app cria um ajuste automático na data de hoje. Nada do seu histórico anterior é alterado.</p>
-      <div class="field"><label>Qual é o seu saldo real hoje?</label><input id="cfgSaldoReal" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Qual é o seu saldo real hoje?</label>
+        <div class="valor-soma-row">
+          <input id="cfgSaldoReal" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="cfgSaldoReal" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+        </div>
+      </div>
       <button class="btn-secundario" id="btnRecalibrarSaldo" style="width:100%;margin-bottom:16px;">Recalibrar</button>
       <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.5;">Esse é o valor que se repete sozinho todo dia, a partir de hoje, até você trocar de novo. Dias passados não mudam. Só quer ajustar um dia específico? Use o Extrato.</p>
       <div class="field"><label>Gasto diário padrão</label>
@@ -778,7 +828,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.15.1</p>
+      <p class="versao-app">Versão 1.15.2</p>
     </div>
   </section>
 
@@ -902,7 +952,12 @@
       <h2 class="modal-title">Nova meta</h2>
       <input type="hidden" id="metaId">
       <div class="field"><label>Nome da meta</label><input type="text" id="metaNome" placeholder="Ex: guardar dinheiro para o carro"></div>
-      <div class="field"><label>Valor objetivo</label><input id="metaValor" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Valor objetivo</label>
+        <div class="valor-soma-row">
+          <input id="metaValor" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="metaValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+        </div>
+      </div>
       <div class="field"><label>Prazo</label><input type="date" id="metaPrazo"></div>
       <div class="modal-acoes">
         <button class="btn-excluir" id="btnExcluirMeta" style="display:none;">Excluir</button>
@@ -918,7 +973,12 @@
       <button class="modal-close" data-close-modal type="button">✕</button>
       <h2 class="modal-title" id="modalAporteTitulo">Guardar valor na meta</h2>
       <input type="hidden" id="aporteMetaId">
-      <div class="field"><label>Valor</label><input id="aporteValor" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label>Valor</label>
+        <div class="valor-soma-row">
+          <input id="aporteValor" inputmode="numeric" placeholder="R$ 0,00">
+          <button type="button" class="btn-somar" data-somar="aporteValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+        </div>
+      </div>
       <div class="modal-acoes"><button class="btn-primario" id="btnSalvarAporte">Confirmar</button></div>
     </div>
   </div>
@@ -930,28 +990,40 @@
     <div class="wizard-step active" data-step="0">
       <h2>Vamos configurar seu painel</h2>
       <p>Qual é o seu saldo inicial hoje?</p>
-      <input id="wSaldoInicial" inputmode="numeric" placeholder="R$ 0,00">
+      <div class="valor-soma-row">
+        <input id="wSaldoInicial" inputmode="numeric" placeholder="R$ 0,00">
+        <button type="button" class="btn-somar" data-somar="wSaldoInicial" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+      </div>
       <div class="wizard-nav"><span></span><button class="btn-primario" data-next>Continuar</button></div>
     </div>
 
     <div class="wizard-step" data-step="1">
       <h2>Salário mensal</h2>
       <p>Qual o valor do seu salário? (pode deixar em branco e preencher depois em Configurações)</p>
-      <input id="wSalarioMensal" inputmode="numeric" placeholder="R$ 0,00">
+      <div class="valor-soma-row">
+        <input id="wSalarioMensal" inputmode="numeric" placeholder="R$ 0,00">
+        <button type="button" class="btn-somar" data-somar="wSalarioMensal" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+      </div>
       <div class="wizard-nav"><button class="btn-texto" data-back>Voltar</button><button class="btn-primario" data-next>Continuar</button></div>
     </div>
 
     <div class="wizard-step" data-step="2">
       <h2>Gasto diário</h2>
       <p>Qual valor você costuma gastar por dia, em média? (pode ajustar depois)</p>
-      <input id="wDiarioValor" inputmode="numeric" placeholder="R$ 0,00">
+      <div class="valor-soma-row">
+        <input id="wDiarioValor" inputmode="numeric" placeholder="R$ 0,00">
+        <button type="button" class="btn-somar" data-somar="wDiarioValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+      </div>
       <div class="wizard-nav"><button class="btn-texto" data-back>Voltar</button><button class="btn-primario" data-next>Continuar</button></div>
     </div>
 
     <div class="wizard-step" data-step="3">
       <h2>Orçamento mensal</h2>
       <p>Quanto você planeja gastar por mês?</p>
-      <input id="wOrcamento" inputmode="numeric" placeholder="R$ 0,00">
+      <div class="valor-soma-row">
+        <input id="wOrcamento" inputmode="numeric" placeholder="R$ 0,00">
+        <button type="button" class="btn-somar" data-somar="wOrcamento" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
+      </div>
       <div class="wizard-nav"><button class="btn-texto" data-back>Voltar</button><button class="btn-primario" data-next>Continuar</button></div>
     </div>
 
@@ -1407,6 +1479,7 @@
     if(!el) return;
     const atual = centsFromInput(el);
     el.value = (atual > 0 ? String(atual) : '') + '+';
+    el.dispatchEvent(new Event('input'));
     el.focus();
   }));
 
