@@ -760,7 +760,7 @@
       <div class="field"><label>Gasto diário padrão</label>
         <div class="valor-soma-row">
           <input id="cfgDiarioValor" inputmode="numeric" placeholder="R$ 0,00">
-          <button type="button" class="btn-somar" data-somar="cfgDiarioValor" title="Somar outro valor (ex: 100,50 + 50)">+</button>
+          <button type="button" class="btn-somar" data-somar="cfgDiarioValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
         </div>
       </div>
       <button class="btn-secundario" id="btnSalvarDiarioPadrao" style="width:100%;">Salvar novo padrão</button>
@@ -778,7 +778,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.15.0</p>
+      <p class="versao-app">Versão 1.15.1</p>
     </div>
   </section>
 
@@ -833,7 +833,7 @@
       <div class="field"><label>Valor</label>
         <div class="valor-soma-row">
           <input id="movValor" inputmode="numeric" placeholder="R$ 0,00">
-          <button type="button" class="btn-somar" data-somar="movValor" title="Somar outro valor (ex: 100,50 + 50)">+</button>
+          <button type="button" class="btn-somar" data-somar="movValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
         </div>
       </div>
       <div class="field"><label>Categoria</label><select id="movCategoria"></select></div>
@@ -873,7 +873,7 @@
       <div class="field"><label>Gasto nesse dia</label>
         <div class="valor-soma-row">
           <input id="diaDiarioValor" inputmode="numeric" placeholder="R$ 0,00">
-          <button type="button" class="btn-somar" data-somar="diaDiarioValor" title="Somar outro valor (ex: 100,50 + 50)">+</button>
+          <button type="button" class="btn-somar" data-somar="diaDiarioValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
         </div>
       </div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Isso muda só esse dia. Os outros continuam com o valor padrão.</p>
@@ -1374,8 +1374,20 @@
   function bindMoney(el, onChange){
     el.addEventListener('input', () => {
       if(/[+-]/.test(el.value)){
-        // modo "conta": deixa o usuário terminar de digitar a expressão antes de somar (com vírgula liberada)
-        el.value = el.value.replace(/[^\d+\-,]/g, '');
+        // modo "conta": cada número da soma é formatado sozinho em reais/centavos, ao vivo — igual
+        // digitar um valor único ("1734" vira "17,34" na hora), sem precisar digitar a vírgula na mão
+        let raw = el.value.replace(/[^\d+\-]/g, '');
+        const terminaComOperadorSolto = /[+-]$/.test(raw);
+        const partes = raw.match(/[+-]?\d+/g) || [];
+        let resultado = '';
+        partes.forEach((p,i) => {
+          const negativo = p.startsWith('-');
+          const digitos = p.replace(/^[+-]/,'');
+          const valorFormatado = (parseInt(digitos,10)/100).toFixed(2).replace('.',',');
+          resultado += (i===0 ? (negativo?'-':'') : (negativo?'-':'+')) + valorFormatado;
+        });
+        if(terminaComOperadorSolto) resultado += raw.slice(-1);
+        el.value = resultado;
         if(onChange) onChange(centsFromInput(el));
         return;
       }
