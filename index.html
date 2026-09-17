@@ -778,7 +778,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.14.0</p>
+      <p class="versao-app">Versão 1.14.1</p>
     </div>
   </section>
 
@@ -2057,7 +2057,6 @@
     const simAno = ay, simMes = am-1;
     const sinal = tipoSim==='entrada' ? 1 : -1;
     const resultados = [];
-    let parcelasUsadas = 0;
     for(let i=0; i<12; i++){
       const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
       const ano = d.getFullYear(), mes = d.getMonth();
@@ -2072,18 +2071,21 @@
       const dias = saldosDiariosDoMes(ano, mes);
       const baseline = dias[diaAntes-1].saldo;
 
-      // uma parcela recorrente por mês (não acumula as anteriores); gasto único conta uma vez e persiste dali pra frente.
-      // sempre desconta no mês em que a parcela foi lançada, não importa o dia exato dentro do mês
-      let ocorrencias = 1;
-      if(recorrenteSim && qtdSim && ocorrencias === 1){
-        if(parcelasUsadas >= qtdSim) ocorrencias = 0;
-        else parcelasUsadas++;
+      // o "baseline" já é o saldo ACUMULADO (cada mês carrega o do mês anterior), então o impacto de uma
+      // decisão recorrente também precisa acumular — a mesma lógica de calcularImpactoSimulado, senão os
+      // dois cálculos discordam entre si (um mostrando risco que o outro não vê)
+      let ocorrencias = 0;
+      if(recorrenteSim){
+        ocorrencias = qtdSim ? Math.min(diferencaMeses+1, qtdSim) : diferencaMeses+1;
+      }else{
+        ocorrencias = 1;
       }
 
       const impacto = sinal * ocorrencias * valorCents;
       resultados.push({ano, mes, diaAntes, baseline, simulado: baseline+impacto});
-      // já mostrou todos os meses com parcela ativa e mais um mês depois (confirmando que acabou) — pode parar
-      if(recorrenteSim && qtdSim && parcelasUsadas >= qtdSim && ocorrencias === 0 && diferencaMeses > 0) break;
+      // depois que as parcelas acabam (se houver limite), o efeito acumulado fica fixo — mostra mais um mês
+      // confirmando isso e pode parar
+      if(recorrenteSim && qtdSim && diferencaMeses+1 > qtdSim) break;
     }
     return resultados;
   }
