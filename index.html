@@ -1185,6 +1185,10 @@
   function diarioValorParaDia(iso){
     const avulso = state.movimentacoes.filter(m => m.tipo==='diario' && m.data===iso && !m.recorrenteDiario);
     if(avulso.length > 0) return avulso.reduce((a,m)=>a+m.valor,0);
+    // durante um período de férias já lançado, não tem gasto diário normal (a pessoa não está trabalhando,
+    // sem gasto de transporte/almoço etc). Um ajuste avulso nesse dia (acima) ainda tem prioridade sobre isso.
+    const emFerias = state.movimentacoes.some(m => m.tipo==='entrada' && m.categoria==='Férias' && m.feriasInicio && iso >= m.feriasInicio && iso < addDiasISO(m.feriasInicio, m.feriasDias));
+    if(emFerias) return 0;
     const m = diarioMovimentacaoParaDia(iso);
     return m ? m.valor : 0;
   }
@@ -1774,12 +1778,9 @@
     garantirRecorrencias(p.ano, p.mes);
     const diaAntes = diaAntesSalario(p.ano, p.mes);
     if(!diaAntes) return null;
-    const dias = saldosDiariosDoMes(p.ano, p.mes);
-    const isoCheckpoint = isoDate(p.ano, p.mes, diaAntes);
-    const isoFimMes = isoDate(p.ano, p.mes, dias.length);
 
     // aplica os mesmos ajustes hipotéticos (pagamento das férias ainda não lançado, correção do salário
-    // reduzido) em cima de uma data-limite — usado tanto pro Fôlego (até a véspera) quanto pro mês inteiro
+    // reduzido) em cima de uma data-limite
     function ajusteAte(dataLimite){
       let ajuste = 0;
       if(valorPagamento && dataPagamento && dataPagamento <= dataLimite){
@@ -1798,17 +1799,38 @@
       return ajuste;
     }
 
-    const folegoRetorno = dias[diaAntes-1].saldo + ajusteAte(isoCheckpoint);
-    // o Fôlego só olha até a véspera do salário — se tiver uma conta vencendo DEPOIS disso, no mesmo mês,
-    // ele não pegaria. Por segurança, comparamos com o saldo do mês inteiro e usamos o menor dos dois.
-    const saldoFimDoMes = dias[dias.length-1].saldo + ajusteAte(isoFimMes);
-    const folegoMaisSeguro = Math.min(folegoRetorno, saldoFimDoMes);
+    // varre TODOS os dias entre o início das férias e o fim do mês de retorno (não só 2 pontos fixos) —
+    // uma conta que vence durante as próprias férias (tipo fatura de cartão) pode criar um aperto no meio
+    // do caminho que nem o Fôlego nem o fim do mês, isolados, pegariam
+    const isoFimMes = isoDate(p.ano, p.mes, daysInMonth(p.ano, p.mes));
+    let mesesPercorridos = [];
+    {
+      const inicioP = parseISO(dataInicio);
+      let ay = inicioP.ano, am = inicioP.mes;
+      while(ay < p.ano || (ay===p.ano && am<=p.mes)){
+        mesesPercorridos.push([ay,am]);
+        am++; if(am>11){ am=0; ay++; }
+      }
+    }
+    let piorSaldo = Infinity, piorDia = null;
+    mesesPercorridos.forEach(([ay,am]) => {
+      saldosDiariosDoMes(ay,am).forEach(d => {
+        if(d.iso < dataInicio || d.iso > isoFimMes) return;
+        const comAjuste = d.saldo + ajusteAte(d.iso);
+        if(comAjuste < piorSaldo){ piorSaldo = comAjuste; piorDia = d.iso; }
+      });
+    });
+    const folegoMaisSeguro = piorSaldo === Infinity ? 0 : piorSaldo;
 
-    const diarioLiberado = diasTirados * valorDiarioPadraoAtual();
+    // o "diário liberado" só é um bônus de verdade ANTES de lançar (o saldo ainda não sabe que esses dias
+    // são de férias, então continua descontando o diário normal). Depois que você lança, o diário desses dias
+    // já para de contar sozinho (ver diarioValorParaDia) — somar de novo aqui contaria o mesmo dinheiro 2x.
+    const jaLancadaEssaFerias = state.movimentacoes.some(m => m.tipo==='entrada' && m.categoria==='Férias' && m.feriasInicio===dataInicio && m.feriasDias===diasTirados);
+    const diarioLiberado = jaLancadaEssaFerias ? 0 : diasTirados * valorDiarioPadraoAtual();
     const saldoMinimo = state.config.saldoMinimo || 0;
     const bruto = folegoMaisSeguro + diarioLiberado;
     const seguro = Math.max(0, folegoMaisSeguro - saldoMinimo) + diarioLiberado;
-    return { dataRetorno, ano:p.ano, mes:p.mes, diaAntes, folegoRetorno: folegoMaisSeguro, diarioLiberado, saldoMinimo, bruto, seguro };
+    return { dataRetorno, ano:p.ano, mes:p.mes, diaAntes, folegoRetorno: folegoMaisSeguro, piorDia, diarioLiberado, saldoMinimo, bruto, seguro };
   }
   let feriasModo = 'integral';
   let ultimoCalculoFerias = null;
@@ -1897,10 +1919,11 @@
     const orcamentoBox = document.getElementById('feriasOrcamentoBox');
     const orcamento = calcularOrcamentoFerias(dataInicio, diasTirados, liquido, data, impacto);
     if(orcamento){
-      document.getElementById('feriasOrcamentoBrutoLinha').innerHTML = 'Dá pra gastar até <b class="mono pos">'+fmt(orcamento.bruto)+'</b>';
+      const diaMaisApertadoTexto = orcamento.piorDia ? ' (ponto mais apertado: '+formatBR(orcamento.piorDia)+')' : '';
+      document.getElementById('feriasOrcamentoBrutoLinha').innerHTML = 'Dá pra gastar até <b class="mono pos">'+fmt(orcamento.bruto)+'</b>'+diaMaisApertadoTexto;
       const seguroBox = document.getElementById('feriasOrcamentoSeguroBox');
       if(orcamento.saldoMinimo > 0){
-        document.getElementById('feriasOrcamentoSeguroLinha').innerHTML = 'Dá pra gastar até <b class="mono pos">'+fmt(orcamento.seguro)+'</b>';
+        document.getElementById('feriasOrcamentoSeguroLinha').innerHTML = 'Dá pra gastar até <b class="mono pos">'+fmt(orcamento.seguro)+'</b>'+diaMaisApertadoTexto;
         seguroBox.style.display = 'block';
       }else{
         seguroBox.style.display = 'none';
