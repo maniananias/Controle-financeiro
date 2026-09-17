@@ -1774,28 +1774,41 @@
     garantirRecorrencias(p.ano, p.mes);
     const diaAntes = diaAntesSalario(p.ano, p.mes);
     if(!diaAntes) return null;
-    const isoCheckpoint = isoDate(p.ano, p.mes, diaAntes);
     const dias = saldosDiariosDoMes(p.ano, p.mes);
-    let folegoRetorno = dias[diaAntes-1].saldo;
-    if(valorPagamento && dataPagamento && dataPagamento <= isoCheckpoint){
-      // só soma se ainda não estiver realmente lançado (senão contaria esse dinheiro duas vezes)
-      const jaLancado = state.movimentacoes.some(m => m.tipo==='entrada' && m.categoria==='Férias' && m.data===dataPagamento && m.feriasInicio===dataInicio);
-      if(!jaLancado) folegoRetorno += valorPagamento;
+    const isoCheckpoint = isoDate(p.ano, p.mes, diaAntes);
+    const isoFimMes = isoDate(p.ano, p.mes, dias.length);
+
+    // aplica os mesmos ajustes hipotéticos (pagamento das férias ainda não lançado, correção do salário
+    // reduzido) em cima de uma data-limite — usado tanto pro Fôlego (até a véspera) quanto pro mês inteiro
+    function ajusteAte(dataLimite){
+      let ajuste = 0;
+      if(valorPagamento && dataPagamento && dataPagamento <= dataLimite){
+        const jaLancado = state.movimentacoes.some(m => m.tipo==='entrada' && m.categoria==='Férias' && m.data===dataPagamento && m.feriasInicio===dataInicio);
+        if(!jaLancado) ajuste += valorPagamento;
+      }
+      if(Array.isArray(impactoSalarios)){
+        impactoSalarios.forEach(imp => {
+          const prefixo = imp.ano+'-'+pad(imp.mes+1)+'-';
+          const salarioGravado = state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
+          if(salarioGravado && salarioGravado.data <= dataLimite && salarioGravado.valor > imp.estimativa){
+            ajuste -= (salarioGravado.valor - imp.estimativa);
+          }
+        });
+      }
+      return ajuste;
     }
-    if(Array.isArray(impactoSalarios)){
-      impactoSalarios.forEach(imp => {
-        const prefixo = imp.ano+'-'+pad(imp.mes+1)+'-';
-        const salarioGravado = state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
-        if(salarioGravado && salarioGravado.data <= isoCheckpoint && salarioGravado.valor > imp.estimativa){
-          folegoRetorno -= (salarioGravado.valor - imp.estimativa);
-        }
-      });
-    }
+
+    const folegoRetorno = dias[diaAntes-1].saldo + ajusteAte(isoCheckpoint);
+    // o Fôlego só olha até a véspera do salário — se tiver uma conta vencendo DEPOIS disso, no mesmo mês,
+    // ele não pegaria. Por segurança, comparamos com o saldo do mês inteiro e usamos o menor dos dois.
+    const saldoFimDoMes = dias[dias.length-1].saldo + ajusteAte(isoFimMes);
+    const folegoMaisSeguro = Math.min(folegoRetorno, saldoFimDoMes);
+
     const diarioLiberado = diasTirados * valorDiarioPadraoAtual();
     const saldoMinimo = state.config.saldoMinimo || 0;
-    const bruto = folegoRetorno + diarioLiberado;
-    const seguro = Math.max(0, folegoRetorno - saldoMinimo) + diarioLiberado;
-    return { dataRetorno, ano:p.ano, mes:p.mes, diaAntes, folegoRetorno, diarioLiberado, saldoMinimo, bruto, seguro };
+    const bruto = folegoMaisSeguro + diarioLiberado;
+    const seguro = Math.max(0, folegoMaisSeguro - saldoMinimo) + diarioLiberado;
+    return { dataRetorno, ano:p.ano, mes:p.mes, diaAntes, folegoRetorno: folegoMaisSeguro, diarioLiberado, saldoMinimo, bruto, seguro };
   }
   let feriasModo = 'integral';
   let ultimoCalculoFerias = null;
