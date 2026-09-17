@@ -448,9 +448,31 @@
   .wizard-dots span{width:6px;height:6px;border-radius:50%;background:var(--line);}
   .wizard-dots span.on{background:var(--primary);}
   .btn-texto{background:none;border:none;color:var(--ink-soft);font-size:13.5px;cursor:pointer;}
+  .tela-carregando{
+    position:fixed;inset:0;z-index:500;background:var(--bg);
+    display:flex;align-items:center;justify-content:center;
+    transition:opacity .35s ease;
+  }
+  .tela-carregando.saindo{opacity:0;pointer-events:none;}
+  .carregando-conteudo{display:flex;flex-direction:column;align-items:center;gap:16px;}
+  .carregando-icone{font-size:40px;}
+  .carregando-spinner{
+    width:28px;height:28px;border-radius:50%;
+    border:3px solid var(--line);border-top-color:var(--primary);
+    animation:girarCarregando .8s linear infinite;
+  }
+  .carregando-texto{font-size:13px;color:var(--ink-soft);}
+  @keyframes girarCarregando{ to{ transform:rotate(360deg); } }
 </style>
 </head>
 <body>
+<div class="tela-carregando" id="telaCarregando">
+  <div class="carregando-conteudo">
+    <span class="carregando-icone">💰</span>
+    <div class="carregando-spinner"></div>
+    <p class="carregando-texto">Carregando seu painel financeiro…</p>
+  </div>
+</div>
 <div class="app">
 
   <!-- ===== VISÃO GERAL ===== -->
@@ -828,7 +850,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.15.2</p>
+      <p class="versao-app">Versão 1.15.3</p>
     </div>
   </section>
 
@@ -3456,6 +3478,7 @@
 
   // ================= INIT =================
   (async function init(){
+    const inicioCarregamento = Date.now();
     await carregarTudo();
     if(!state.config){
       document.getElementById('wAnoInicial').value = new Date().getFullYear();
@@ -3464,6 +3487,14 @@
     }else{
       irPara('dashboard');
     }
+    // garante um tempo mínimo visível, pra não "piscar" rápido demais quando os dados carregam na hora
+    const tempoMinimoMs = 600;
+    const faltaEsperar = Math.max(0, tempoMinimoMs - (Date.now() - inicioCarregamento));
+    setTimeout(() => {
+      const telaCarregando = document.getElementById('telaCarregando');
+      telaCarregando.classList.add('saindo');
+      setTimeout(() => telaCarregando.remove(), 400);
+    }, faltaEsperar);
   })();
 })();
 </script>
