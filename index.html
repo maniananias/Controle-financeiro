@@ -130,6 +130,8 @@
   .log-versao-data{font-size:11px;color:var(--ink-soft);}
   .log-versao ul{margin:0;padding-left:18px;}
   .log-versao li{font-size:12.5px;color:var(--ink);line-height:1.6;}
+  .btn-desfazer-log{background:rgba(255,107,133,.12);border:1px solid rgba(255,107,133,.35);color:var(--danger);font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:inherit;}
+  .log-desfeito-tag{font-size:11px;color:var(--ink-soft);opacity:.7;margin:0;font-style:italic;}
   .ajuste-linhas div{flex:1;background:var(--surface-alt);border-radius:10px;padding:8px 10px;}
   .ajuste-linhas span{display:block;font-size:10.5px;color:var(--ink-faint);margin-bottom:2px;}
   .ajuste-linhas b{display:block;font-size:14px;font-weight:600;}
@@ -859,7 +861,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.16.0</p>
+      <p class="versao-app">Versão 1.17.0</p>
     </div>
   </section>
 
@@ -1111,12 +1113,23 @@
         : l.antes ? l.antes
         : l.depois ? l.depois
         : '';
+      let botaoDesfazer = '';
+      if(l.desfeito){
+        botaoDesfazer = '<p class="log-desfeito-tag">↩️ Desfeito</p>';
+      }else if(l.desfazer){
+        botaoDesfazer = '<button type="button" class="btn-desfazer-log" data-log-id="'+l.id+'">Desfazer</button>';
+      }
       return '<div class="log-versao">'+
         '<div class="log-versao-cabecalho"><span class="log-versao-numero">'+icone+' '+l.area+'</span><span class="log-versao-data">'+formatarDataHoraLog(l.quando)+'</span></div>'+
         '<p style="font-size:12.5px;color:var(--ink);margin:0 0 2px;font-weight:600;">'+l.descricao+'</p>'+
-        (detalhe ? '<p style="font-size:12px;color:var(--ink-soft);margin:0;">'+detalhe+'</p>' : '')+
+        (detalhe ? '<p style="font-size:12px;color:var(--ink-soft);margin:0 0 6px;">'+detalhe+'</p>' : '')+
+        botaoDesfazer+
       '</div>';
     }).join('');
+    document.querySelectorAll('.btn-desfazer-log').forEach(btn => btn.addEventListener('click', async () => {
+      if(!await confirmarApp('Desfazer essa alteração, voltando pro valor de antes?', 'Desfazer')) return;
+      executarDesfazerLog(btn.dataset.logId);
+    }));
   }
   document.getElementById('btnLogAlteracoes').addEventListener('click', () => {
     renderLogAlteracoes();
@@ -1204,13 +1217,62 @@
   }
   async function salvarLog(){ try{ await storage.set('fin-log', JSON.stringify(state.logAlteracoes), false); }catch(e){} }
   // registra uma mudança no log de auditoria — usado em qualquer edição de config, movimentação, diário ou meta.
-  // "antes"/"depois" podem ser um valor simples ou um objeto {campo: valor}; null quando não se aplica (ex: criação)
-  function registrarLog(area, acao, descricao, antes, depois){
+  // "antes"/"depois" são os textos mostrados na tela (podem ser formatados, tipo "R$100,00").
+  // "desfazer" é um objeto com dados BRUTOS (não formatados) que executarDesfazerLog sabe interpretar pra
+  // reverter essa mudança específica — null quando a ação não pode ser desfeita
+  function registrarLog(area, acao, descricao, antes, depois, desfazer){
     state.logAlteracoes.unshift({
-      id: uid(), quando: new Date().toISOString(), area, acao, descricao, antes: antes ?? null, depois: depois ?? null
+      id: uid(), quando: new Date().toISOString(), area, acao, descricao,
+      antes: antes ?? null, depois: depois ?? null, desfazer: desfazer ?? null, desfeito: false
     });
     if(state.logAlteracoes.length > 300) state.logAlteracoes.length = 300;
     salvarLog();
+  }
+  // interpreta o payload "desfazer" de uma entrada do log e reverte a mudança correspondente
+  async function executarDesfazerLog(logId){
+    const entrada = state.logAlteracoes.find(l => l.id === logId);
+    if(!entrada || !entrada.desfazer || entrada.desfeito) return;
+    const d = entrada.desfazer;
+    if(d.tipo === 'config'){
+      state.config[d.campo] = d.valorAntes;
+      limparCache(); await salvarConfig();
+    }else if(d.tipo === 'mov-criado'){
+      state.movimentacoes = state.movimentacoes.filter(m => m.id !== d.id);
+      limparCache(); await salvarMovimentacoes();
+    }else if(d.tipo === 'mov-editado'){
+      const idx = state.movimentacoes.findIndex(m => m.id === d.snapshot.id);
+      if(idx >= 0) state.movimentacoes[idx] = d.snapshot;
+      limparCache(); await salvarMovimentacoes();
+    }else if(d.tipo === 'mov-excluido'){
+      state.movimentacoes.push(d.snapshot);
+      limparCache(); await salvarMovimentacoes();
+    }else if(d.tipo === 'diario-editado'){
+      const avulso = state.movimentacoes.find(mv => mv.tipo==='diario' && mv.data===d.iso && !mv.recorrenteDiario);
+      if(d.snapshot === null){
+        // não existia ajuste avulso antes — remove o que foi criado
+        state.movimentacoes = state.movimentacoes.filter(mv => !(mv.tipo==='diario' && mv.data===d.iso && !mv.recorrenteDiario));
+      }else if(avulso){
+        avulso.valor = d.snapshot.valor;
+      }else{
+        state.movimentacoes.push(d.snapshot);
+      }
+      limparCache(); await salvarMovimentacoes();
+    }else if(d.tipo === 'meta-criada'){
+      state.metas = state.metas.filter(m => m.id !== d.id);
+      await salvarMetas();
+    }else if(d.tipo === 'meta-editada' || d.tipo === 'meta-aporte'){
+      const idx = state.metas.findIndex(m => m.id === d.snapshot.id);
+      if(idx >= 0) state.metas[idx] = d.snapshot;
+      await salvarMetas();
+    }else if(d.tipo === 'meta-excluida'){
+      state.metas.push(d.snapshot);
+      await salvarMetas();
+    }
+    entrada.desfeito = true;
+    await salvarLog();
+    renderTelaAtual();
+    renderLogAlteracoes();
+    mostrarToast('Desfeito');
   }
   // corrige lançamentos que ficaram marcados como "filho" (origemRecorrenteId) e "origem" (recorrente:true) ao mesmo tempo
   function repararSeriesCorrompidas(){
@@ -2660,6 +2722,7 @@
     };
     if(id){
       const atual = state.movimentacoes.find(m=>m.id===id);
+      const snapshotAntes = JSON.parse(JSON.stringify(atual));
       const antesLog = { valor: atual.valor, data: atual.data, categoria: atual.categoria, descricao: atual.descricao };
       const origemId = idOrigemDaSerie(atual);
       const ehFilhoDeSerie = !!atual.origemRecorrenteId;
@@ -2682,11 +2745,15 @@
       if(antesLog.categoria !== categoria) mudancas.push('Categoria: '+antesLog.categoria+' → '+categoria);
       if((antesLog.descricao||'') !== (payloadComum.descricao||'')) mudancas.push('Descrição: "'+(antesLog.descricao||'(vazio)')+'" → "'+(payloadComum.descricao||'(vazio)')+'"');
       if(mudancas.length > 0){
-        registrarLog('Movimentações', 'editado', (categoria||'Movimentação')+' de '+formatBR(data), mudancas.join(' · '), null);
+        // "aplicar a todas" mexe em vários lançamentos da série — desfazer ficaria complexo demais, então
+        // essa ação fica registrada no log mas sem opção de desfazer (as outras edições simples têm)
+        const desfazerPayload = (aplicarTodas && origemId) ? null : { tipo:'mov-editado', snapshot: snapshotAntes };
+        registrarLog('Movimentações', 'editado', (categoria||'Movimentação')+' de '+formatBR(data), mudancas.join(' · '), null, desfazerPayload);
       }
     }else{
-      state.movimentacoes.push({ id: uid(), origemRecorrenteId:null, criadoEm:new Date().toISOString(), ...payloadComum, data, recorrente, recorrenteQtdMeses, recorrenteDiario });
-      registrarLog('Movimentações', 'criado', categoria+' de '+formatBR(data), null, fmt(valor));
+      const novaMovimentacao = { id: uid(), origemRecorrenteId:null, criadoEm:new Date().toISOString(), ...payloadComum, data, recorrente, recorrenteQtdMeses, recorrenteDiario };
+      state.movimentacoes.push(novaMovimentacao);
+      registrarLog('Movimentações', 'criado', categoria+' de '+formatBR(data), null, fmt(valor), { tipo:'mov-criado', id: novaMovimentacao.id });
     }
     limparCache(); salvarMovimentacoes();
     document.getElementById('modalMov').classList.remove('show');
@@ -2704,11 +2771,12 @@
     const aplicarTodas = document.getElementById('movAplicarTodas').checked;
     if(aplicarTodas && origemId){
       if(!await confirmarApp('Isso vai excluir TODAS as repetições dessa conta (passadas e futuras). Continuar?', 'Excluir série')) return;
-      registrarLog('Movimentações', 'excluído', (atual.categoria||'Movimentação')+' — série inteira (recorrente)', fmt(atual.valor), null);
+      // exclusão de série inteira também fica sem desfazer (muitos registros ao mesmo tempo)
+      registrarLog('Movimentações', 'excluído', (atual.categoria||'Movimentação')+' — série inteira (recorrente)', fmt(atual.valor), null, null);
       state.movimentacoes = state.movimentacoes.filter(m => m.id !== origemId && m.origemRecorrenteId !== origemId);
     }else{
       if(!await confirmarApp('Excluir esta movimentação?', 'Excluir')) return;
-      registrarLog('Movimentações', 'excluído', (atual.categoria||'Movimentação')+' de '+formatBR(atual.data), fmt(atual.valor), null);
+      registrarLog('Movimentações', 'excluído', (atual.categoria||'Movimentação')+' de '+formatBR(atual.data), fmt(atual.valor), null, { tipo:'mov-excluido', snapshot: JSON.parse(JSON.stringify(atual)) });
       state.movimentacoes = state.movimentacoes.filter(m=>m.id!==id);
     }
     limparCache(); salvarMovimentacoes();
@@ -2925,6 +2993,7 @@
     const valor = centsFromInput(document.getElementById('diaDiarioValor'));
     const avulso = state.movimentacoes.find(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
     const valorAntes = avulso ? avulso.valor : diarioValorParaDia(iso);
+    const snapshotAvulsoAntes = avulso ? JSON.parse(JSON.stringify(avulso)) : null;
     if(avulso){
       avulso.valor = valor;
     }else{
@@ -2935,7 +3004,7 @@
         origemRecorrenteId:null, criadoEm:new Date().toISOString()
       });
     }
-    if(valorAntes !== valor) registrarLog('Diário', 'editado', 'Gasto diário de '+formatBR(iso), fmt(valorAntes), fmt(valor));
+    if(valorAntes !== valor) registrarLog('Diário', 'editado', 'Gasto diário de '+formatBR(iso), fmt(valorAntes), fmt(valor), { tipo:'diario-editado', iso, snapshot: snapshotAvulsoAntes });
     limparCache(); await salvarMovimentacoes();
     document.getElementById('modalDiarioDia').classList.remove('show');
     mostrarToast('Diário do dia atualizado');
@@ -2943,8 +3012,10 @@
   });
   document.getElementById('btnDiaDiarioRemover').addEventListener('click', async () => {
     const iso = document.getElementById('diaDiarioIso').value;
+    const avulsoRemovido = state.movimentacoes.find(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
     state.movimentacoes = state.movimentacoes.filter(mv => !(mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario));
-    registrarLog('Diário', 'editado', 'Gasto diário de '+formatBR(iso), null, 'voltou ao valor padrão');
+    registrarLog('Diário', 'editado', 'Gasto diário de '+formatBR(iso), null, 'voltou ao valor padrão',
+      avulsoRemovido ? { tipo:'diario-editado', iso, snapshot: JSON.parse(JSON.stringify(avulsoRemovido)) } : null);
     limparCache(); await salvarMovimentacoes();
     document.getElementById('modalDiarioDia').classList.remove('show');
     mostrarToast('Voltou pro valor padrão');
@@ -3196,15 +3267,17 @@
     const id = document.getElementById('metaId').value;
     if(id){
       const meta = state.metas.find(m=>m.id===id);
+      const snapshotAntes = JSON.parse(JSON.stringify(meta));
       const mudancas = [];
       if(meta.nome !== nome) mudancas.push('Nome: "'+meta.nome+'" → "'+nome+'"');
       if(meta.valorObjetivo !== valor) mudancas.push('Valor objetivo: '+fmt(meta.valorObjetivo)+' → '+fmt(valor));
       if(meta.dataLimite !== prazo) mudancas.push('Prazo: '+formatBR(meta.dataLimite)+' → '+formatBR(prazo));
-      if(mudancas.length > 0) registrarLog('Metas', 'editado', 'Meta "'+meta.nome+'"', mudancas.join(' · '), null);
+      if(mudancas.length > 0) registrarLog('Metas', 'editado', 'Meta "'+meta.nome+'"', mudancas.join(' · '), null, { tipo:'meta-editada', snapshot: snapshotAntes });
       meta.nome = nome; meta.valorObjetivo = valor; meta.dataLimite = prazo;
     }else{
-      state.metas.push({ id: uid(), nome, valorObjetivo: valor, valorAtual:0, dataInicio: todayISO(), dataLimite: prazo, status:'ativa' });
-      registrarLog('Metas', 'criado', 'Meta "'+nome+'"', null, fmt(valor)+' até '+formatBR(prazo));
+      const novaMeta = { id: uid(), nome, valorObjetivo: valor, valorAtual:0, dataInicio: todayISO(), dataLimite: prazo, status:'ativa' };
+      state.metas.push(novaMeta);
+      registrarLog('Metas', 'criado', 'Meta "'+nome+'"', null, fmt(valor)+' até '+formatBR(prazo), { tipo:'meta-criada', id: novaMeta.id });
     }
     await salvarMetas();
     document.getElementById('modalMeta').classList.remove('show');
@@ -3214,7 +3287,7 @@
     const id = document.getElementById('metaId').value;
     if(!await confirmarApp('Excluir esta meta?', 'Excluir meta')) return;
     const meta = state.metas.find(m=>m.id===id);
-    if(meta) registrarLog('Metas', 'excluído', 'Meta "'+meta.nome+'"', fmt(meta.valorAtual)+' de '+fmt(meta.valorObjetivo), null);
+    if(meta) registrarLog('Metas', 'excluído', 'Meta "'+meta.nome+'"', fmt(meta.valorAtual)+' de '+fmt(meta.valorObjetivo), null, { tipo:'meta-excluida', snapshot: JSON.parse(JSON.stringify(meta)) });
     state.metas = state.metas.filter(m=>m.id!==id);
     await salvarMetas();
     document.getElementById('modalMeta').classList.remove('show');
@@ -3233,10 +3306,11 @@
     const valor = centsFromInput(document.getElementById('aporteValor'));
     if(valor<=0) return;
     const meta = state.metas.find(m=>m.id===id);
+    const snapshotAntes = JSON.parse(JSON.stringify(meta));
     const antes = meta.valorAtual;
     meta.valorAtual += valor;
     if(meta.valorAtual >= meta.valorObjetivo) meta.status = 'concluida';
-    registrarLog('Metas', 'editado', 'Aporte em "'+meta.nome+'"', fmt(antes)+' guardado', fmt(meta.valorAtual)+' guardado (+'+fmt(valor)+')');
+    registrarLog('Metas', 'editado', 'Aporte em "'+meta.nome+'"', fmt(antes)+' guardado', fmt(meta.valorAtual)+' guardado (+'+fmt(valor)+')', { tipo:'meta-aporte', snapshot: snapshotAntes });
     await salvarMetas();
     document.getElementById('modalAporte').classList.remove('show');
     mostrarToast('Valor guardado na meta');
@@ -3269,7 +3343,8 @@
   bindMoney(document.getElementById('cfgSalarioMensal'), c => { state.config.salarioMensal = c; });
   document.getElementById('cfgSalarioMensal').addEventListener('blur', () => {
     if(state.config.salarioMensal !== configAoAbrirTela.salarioMensal){
-      registrarLog('Configurações', 'editado', 'Salário mensal', fmt(configAoAbrirTela.salarioMensal||0), fmt(state.config.salarioMensal||0));
+      registrarLog('Configurações', 'editado', 'Salário mensal', fmt(configAoAbrirTela.salarioMensal||0), fmt(state.config.salarioMensal||0),
+        { tipo:'config', campo:'salarioMensal', valorAntes: configAoAbrirTela.salarioMensal||0 });
       configAoAbrirTela.salarioMensal = state.config.salarioMensal;
     }
     salvarConfig();
@@ -3281,18 +3356,21 @@
       if(!ok){ state.config.saldoInicial = saldoInicialAoAbrirTela; setMoneyValue(document.getElementById('cfgSaldoInicial'), saldoInicialAoAbrirTela); return; }
     }
     if(state.config.saldoInicial !== configAoAbrirTela.saldoInicial){
-      registrarLog('Configurações', 'editado', 'Saldo inicial', fmt(configAoAbrirTela.saldoInicial||0), fmt(state.config.saldoInicial||0));
+      registrarLog('Configurações', 'editado', 'Saldo inicial', fmt(configAoAbrirTela.saldoInicial||0), fmt(state.config.saldoInicial||0),
+        { tipo:'config', campo:'saldoInicial', valorAntes: configAoAbrirTela.saldoInicial||0 });
       configAoAbrirTela.saldoInicial = state.config.saldoInicial;
     }
     saldoInicialAoAbrirTela = state.config.saldoInicial;
     limparCache(); salvarConfig();
   });
   document.getElementById('cfgDataSaldoInicial').addEventListener('change', e => {
-    const antes = configAoAbrirTela.dataSaldoInicial || '(vazio)';
+    const antesValor = configAoAbrirTela.dataSaldoInicial || null;
+    const antes = antesValor || '(vazio)';
     state.config.dataSaldoInicial = e.target.value || null;
     const depois = state.config.dataSaldoInicial || '(vazio)';
     if(antes !== depois){
-      registrarLog('Configurações', 'editado', '"Esse saldo era de que dia?"', antes, depois);
+      registrarLog('Configurações', 'editado', '"Esse saldo era de que dia?"', antes, depois,
+        { tipo:'config', campo:'dataSaldoInicial', valorAntes: antesValor });
       configAoAbrirTela.dataSaldoInicial = state.config.dataSaldoInicial;
     }
     limparCache(); salvarConfig();
@@ -3300,7 +3378,8 @@
   bindMoney(document.getElementById('cfgOrcamento'), c => { state.config.orcamentoMensal = c; });
   document.getElementById('cfgOrcamento').addEventListener('blur', () => {
     if(state.config.orcamentoMensal !== configAoAbrirTela.orcamentoMensal){
-      registrarLog('Configurações', 'editado', 'Orçamento mensal', fmt(configAoAbrirTela.orcamentoMensal||0), fmt(state.config.orcamentoMensal||0));
+      registrarLog('Configurações', 'editado', 'Orçamento mensal', fmt(configAoAbrirTela.orcamentoMensal||0), fmt(state.config.orcamentoMensal||0),
+        { tipo:'config', campo:'orcamentoMensal', valorAntes: configAoAbrirTela.orcamentoMensal||0 });
       configAoAbrirTela.orcamentoMensal = state.config.orcamentoMensal;
     }
     salvarConfig();
@@ -3308,7 +3387,8 @@
   bindMoney(document.getElementById('cfgSaldoMinimo'), c => { state.config.saldoMinimo = c; });
   document.getElementById('cfgSaldoMinimo').addEventListener('blur', () => {
     if(state.config.saldoMinimo !== configAoAbrirTela.saldoMinimo){
-      registrarLog('Configurações', 'editado', 'Saldo mínimo de alerta', fmt(configAoAbrirTela.saldoMinimo||0), fmt(state.config.saldoMinimo||0));
+      registrarLog('Configurações', 'editado', 'Saldo mínimo de alerta', fmt(configAoAbrirTela.saldoMinimo||0), fmt(state.config.saldoMinimo||0),
+        { tipo:'config', campo:'saldoMinimo', valorAntes: configAoAbrirTela.saldoMinimo||0 });
       configAoAbrirTela.saldoMinimo = state.config.saldoMinimo;
     }
     salvarConfig();
@@ -3317,7 +3397,8 @@
     const v = Math.max(1, Math.min(31, Number(e.target.value) || 0));
     if(v > 0){
       if(v !== configAoAbrirTela.diaRecebimento){
-        registrarLog('Configurações', 'editado', 'Dia de recebimento', configAoAbrirTela.diaRecebimento||'(vazio)', v);
+        registrarLog('Configurações', 'editado', 'Dia de recebimento', configAoAbrirTela.diaRecebimento||'(vazio)', v,
+          { tipo:'config', campo:'diaRecebimento', valorAntes: configAoAbrirTela.diaRecebimento||null });
         configAoAbrirTela.diaRecebimento = v;
       }
       state.config.diaRecebimento = v; limparCache(); salvarConfig();
@@ -3326,16 +3407,21 @@
   });
   document.getElementById('cfgDiaRecebimento2').addEventListener('change', e => {
     const raw = e.target.value;
-    const antes = configAoAbrirTela.diaRecebimento2 || '(vazio)';
+    const antesValor = configAoAbrirTela.diaRecebimento2 || null;
+    const antes = antesValor || '(vazio)';
     if(!raw){
       state.config.diaRecebimento2 = null;
-      if(antes !== '(vazio)'){ registrarLog('Configurações', 'editado', '2º dia de recebimento', antes, '(vazio)'); configAoAbrirTela.diaRecebimento2 = null; }
+      if(antes !== '(vazio)'){
+        registrarLog('Configurações', 'editado', '2º dia de recebimento', antes, '(vazio)', { tipo:'config', campo:'diaRecebimento2', valorAntes: antesValor });
+        configAoAbrirTela.diaRecebimento2 = null;
+      }
       salvarConfig(); return;
     }
     const v = Math.max(1, Math.min(31, Number(raw) || 0));
     state.config.diaRecebimento2 = v > 0 ? v : null;
     if(state.config.diaRecebimento2 !== configAoAbrirTela.diaRecebimento2){
-      registrarLog('Configurações', 'editado', '2º dia de recebimento', antes, state.config.diaRecebimento2||'(vazio)');
+      registrarLog('Configurações', 'editado', '2º dia de recebimento', antes, state.config.diaRecebimento2||'(vazio)',
+        { tipo:'config', campo:'diaRecebimento2', valorAntes: antesValor });
       configAoAbrirTela.diaRecebimento2 = state.config.diaRecebimento2;
     }
     e.target.value = state.config.diaRecebimento2 || '';
