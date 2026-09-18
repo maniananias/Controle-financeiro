@@ -850,7 +850,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.15.5</p>
+      <p class="versao-app">Versão 1.15.6</p>
     </div>
   </section>
 
@@ -2713,12 +2713,16 @@
       [anoC, mesC] = addMeses(anoC, mesC, 1);
     }
     let saldo = inicio.dia === 1 ? saldoInicialDoMes(inicio.ano, inicio.mes) : saldoAteODia(inicio.ano, inicio.mes, inicio.dia-1);
+    const dataAncora = state.config.dataSaldoInicial;
     const arr = [];
     let iso = isoInicio;
     let guarda = 0;
     while(guarda < 400){
       const t = totaisDoDia(iso);
-      saldo += t.entradas - t.saidas - t.diario;
+      // antes da data em que o saldo inicial foi informado, não acumula nada — mesma regra de saldosDiariosDoMes
+      if(!dataAncora || iso >= dataAncora){
+        saldo += t.entradas - t.saidas - t.diario;
+      }
       const p = parseISO(iso);
       arr.push({ dia:p.dia, mes:p.mes, ano:p.ano, iso, saldo, ...t });
       if(iso === isoFim) break;
