@@ -850,7 +850,7 @@
     <div class="config-section">
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
-      <p class="versao-app">Versão 1.15.3</p>
+      <p class="versao-app">Versão 1.15.4</p>
     </div>
   </section>
 
@@ -3488,7 +3488,7 @@
       irPara('dashboard');
     }
     // garante um tempo mínimo visível, pra não "piscar" rápido demais quando os dados carregam na hora
-    const tempoMinimoMs = 600;
+    const tempoMinimoMs = 2000;
     const faltaEsperar = Math.max(0, tempoMinimoMs - (Date.now() - inicioCarregamento));
     setTimeout(() => {
       const telaCarregando = document.getElementById('telaCarregando');
