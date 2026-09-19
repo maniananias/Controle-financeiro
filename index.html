@@ -861,7 +861,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.19.0</p>
+      <p class="versao-app">Versão 1.19.1</p>
     </div>
   </section>
 
@@ -1405,7 +1405,8 @@
     if(avulso.length > 0) return avulso[avulso.length-1];
     const origens = state.movimentacoes.filter(m => m.tipo==='diario' && m.recorrenteDiario && m.data <= iso);
     if(origens.length === 0) return null;
-    origens.sort((a,b) => b.data.localeCompare(a.data));
+    // mesmo desempate: se duas origens caírem no mesmo dia, a criada por último é que vale
+    origens.sort((a,b) => b.data.localeCompare(a.data) || (b.criadoEm||'').localeCompare(a.criadoEm||''));
     return origens[0];
   }
   function diarioValorParaDia(iso){
@@ -3334,7 +3335,8 @@
   function valorDiarioPadraoAtual(){
     const origens = state.movimentacoes.filter(m => m.tipo==='diario' && m.recorrenteDiario);
     if(origens.length === 0) return 0;
-    origens.sort((a,b) => b.data.localeCompare(a.data));
+    // desempata pela hora de criação quando duas origens caem no mesmo dia (ex: mudou o padrão 2x hoje)
+    origens.sort((a,b) => b.data.localeCompare(a.data) || (b.criadoEm||'').localeCompare(a.criadoEm||''));
     return origens[0].valor;
   }
   let saldoInicialAoAbrirTela = 0;
