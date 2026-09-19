@@ -861,7 +861,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.17.0</p>
+      <p class="versao-app">Versão 1.19.0</p>
     </div>
   </section>
 
@@ -1267,6 +1267,13 @@
     }else if(d.tipo === 'meta-excluida'){
       state.metas.push(d.snapshot);
       await salvarMetas();
+    }else if(d.tipo === 'snapshot-completo'){
+      state.movimentacoes = d.snapshot.movimentacoes;
+      state.metas = d.snapshot.metas;
+      state.diarioOverrides = d.snapshot.diarioOverrides;
+      state.config = d.snapshot.config;
+      limparCache();
+      await salvarMovimentacoes(); await salvarMetas(); await salvarOverrides(); await salvarConfig();
     }
     entrada.desfeito = true;
     await salvarLog();
@@ -2186,6 +2193,8 @@
       feriasImpacto: ultimoCalculoFerias.impacto,
       recorrente:false, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm:new Date().toISOString()
     });
+    const novaMovFerias = state.movimentacoes[state.movimentacoes.length-1];
+    registrarLog('Movimentações', 'criado', descricao+' de '+formatBR(ultimoCalculoFerias.data), null, fmt(ultimoCalculoFerias.liquido), { tipo:'mov-criado', id: novaMovFerias.id });
     limparCache();
     await salvarMovimentacoes();
     mostrarToast('Férias lançadas');
@@ -2250,11 +2259,15 @@
       categoria:'13º Salário', descricao:'1ª parcela do 13º', formaPagamento:'Transferência',
       recorrente:false, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm:new Date().toISOString()
     });
+    const mov1 = state.movimentacoes[state.movimentacoes.length-1];
+    registrarLog('Movimentações', 'criado', '1ª parcela do 13º de '+formatBR(d.data1), null, fmt(d.primeiraParcela), { tipo:'mov-criado', id: mov1.id });
     state.movimentacoes.push({
       id: uid(), data: d.data2, tipo:'entrada', valor: d.segundaLiquida,
       categoria:'13º Salário', descricao:'2ª parcela do 13º'+(d.desconto>0?' (líquido)':''), formaPagamento:'Transferência',
       recorrente:false, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm:new Date().toISOString()
     });
+    const mov2 = state.movimentacoes[state.movimentacoes.length-1];
+    registrarLog('Movimentações', 'criado', '2ª parcela do 13º de '+formatBR(d.data2), null, fmt(d.segundaLiquida), { tipo:'mov-criado', id: mov2.id });
     limparCache();
     await salvarMovimentacoes();
     mostrarToast('13º salário lançado');
@@ -3434,11 +3447,13 @@
     const atual = valorDiarioPadraoAtual();
     if(novoValor === atual){ mostrarToast('Já está configurado assim'); return; }
     if(!await confirmarApp('Isso muda seu gasto diário padrão pra '+fmt(novoValor)+' a partir de hoje. Dias anteriores continuam com o valor de antes. Continuar?', 'Gasto diário padrão')) return;
-    state.movimentacoes.push({
+    const novoRegistro = {
       id: uid(), data: todayISO(), tipo:'diario', valor: novoValor, categoria:'Outros',
       descricao:'Novo padrão diário', formaPagamento:'Dinheiro',
       recorrente:false, recorrenteDiario:true, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm:new Date().toISOString()
-    });
+    };
+    state.movimentacoes.push(novoRegistro);
+    registrarLog('Diário', 'editado', 'Gasto diário padrão', fmt(atual), fmt(novoValor), { tipo:'mov-criado', id: novoRegistro.id });
     limparCache();
     await salvarMovimentacoes();
     mostrarToast('Gasto diário padrão atualizado');
@@ -3510,10 +3525,12 @@
         const backup = JSON.parse(leitor.result);
         if(!backup.config || !Array.isArray(backup.movimentacoes)) throw new Error('o arquivo não tem o formato esperado (faltam campos config/movimentacoes)');
         if(!await confirmarApp('Isso vai substituir os dados atuais pelos do backup. Continuar?', 'Importar backup')) return;
+        const snapshotAntes = { movimentacoes: JSON.parse(JSON.stringify(state.movimentacoes)), metas: JSON.parse(JSON.stringify(state.metas)), diarioOverrides: JSON.parse(JSON.stringify(state.diarioOverrides)), config: JSON.parse(JSON.stringify(state.config)) };
         state.config = backup.config;
         state.movimentacoes = backup.movimentacoes;
         state.diarioOverrides = backup.diarioOverrides || {};
         state.metas = backup.metas || [];
+        registrarLog('Dados', 'editado', 'Importar backup ("'+arquivo.name+'")', (snapshotAntes.movimentacoes.length)+' movimentações antes', (state.movimentacoes.length)+' movimentações depois', { tipo:'snapshot-completo', snapshot: snapshotAntes });
         limparCache();
         await salvarConfig(); await salvarMovimentacoes(); await salvarOverrides(); await salvarMetas();
         mostrarToast('Backup importado com sucesso!', 3000);
@@ -3546,6 +3563,8 @@
       categoria: 'Outros', descricao: 'Ajuste de saldo', formaPagamento: 'Outros',
       recorrente:false, recorrenteQtdMeses:null, origemRecorrenteId:null, criadoEm: new Date().toISOString()
     });
+    const novoAjuste = state.movimentacoes[state.movimentacoes.length-1];
+    registrarLog('Movimentações', 'criado', 'Ajuste de saldo (recalibrar) de '+formatBR(todayISO()), 'Saldo do app: '+fmt(saldoAppHoje), 'Saldo informado: '+fmt(saldoReal), { tipo:'mov-criado', id: novoAjuste.id });
     limparCache();
     await salvarMovimentacoes();
     document.getElementById('cfgSaldoReal').value = '';
@@ -3554,7 +3573,9 @@
   });
   document.getElementById('btnZerarTudo').addEventListener('click', async () => {
     if(!await confirmarApp('Isso vai apagar todas as movimentações, metas e ajustes de gasto diário. Deseja continuar?', 'Apagar tudo')) return;
+    const snapshotAntes = { movimentacoes: JSON.parse(JSON.stringify(state.movimentacoes)), metas: JSON.parse(JSON.stringify(state.metas)), diarioOverrides: JSON.parse(JSON.stringify(state.diarioOverrides)), config: JSON.parse(JSON.stringify(state.config)) };
     state.movimentacoes = []; state.metas = []; state.diarioOverrides = {};
+    registrarLog('Dados', 'excluído', 'Zerar tudo', (snapshotAntes.movimentacoes.length)+' movimentações, '+(snapshotAntes.metas.length)+' metas', '0 movimentações, 0 metas', { tipo:'snapshot-completo', snapshot: snapshotAntes });
     limparCache();
     await salvarMovimentacoes(); await salvarMetas(); await salvarOverrides();
     mostrarToast('Tudo apagado, pronto pra recomeçar');
@@ -3562,7 +3583,9 @@
   });
   document.getElementById('btnCarregarExemplo').addEventListener('click', async () => {
     if(!await confirmarApp('Isso vai adicionar um punhado de lançamentos fictícios (aluguel, mercado, etc.) aos seus dados atuais, só pra você testar o app. Continuar?', 'Carregar dados de exemplo')) return;
+    const snapshotAntes = { movimentacoes: JSON.parse(JSON.stringify(state.movimentacoes)), metas: JSON.parse(JSON.stringify(state.metas)), diarioOverrides: JSON.parse(JSON.stringify(state.diarioOverrides)), config: JSON.parse(JSON.stringify(state.config)) };
     carregarDadosExemplo();
+    registrarLog('Dados', 'criado', 'Carregar dados de exemplo', null, 'lançamentos fictícios adicionados', { tipo:'snapshot-completo', snapshot: snapshotAntes });
     await salvarMovimentacoes();
     mostrarToast('Dados de exemplo carregados');
     renderTelaAtual();
