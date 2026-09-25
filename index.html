@@ -443,11 +443,20 @@
 
   /* ---- toast ---- */
   .toast{
-    position:fixed;left:50%;bottom:96px;transform:translateX(-50%);
-    background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:20px;font-size:12.5px;font-weight:600;
-    opacity:0;pointer-events:none;transition:opacity .25s;z-index:200;
+    position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(10px);
+    display:flex;align-items:center;gap:8px;
+    background:var(--surface);color:var(--ink);padding:11px 18px;border-radius:24px;font-size:12.5px;font-weight:600;
+    border:1px solid var(--line);box-shadow:0 12px 32px rgba(0,0,0,.35);
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:200;
+    max-width:88vw;
   }
-  .toast.show{opacity:1;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast-icone{font-size:14px;flex:0 0 auto;line-height:1;}
+  .toast-texto{white-space:normal;line-height:1.35;}
+  .toast-sucesso{border-color:rgba(34,227,178,.4);box-shadow:0 12px 32px rgba(34,227,178,.12), 0 12px 32px rgba(0,0,0,.3);}
+  .toast-aviso{border-color:rgba(255,180,73,.45);box-shadow:0 12px 32px rgba(255,180,73,.14), 0 12px 32px rgba(0,0,0,.3);}
+  .toast-exclusao{border-color:rgba(255,107,133,.45);box-shadow:0 12px 32px rgba(255,107,133,.14), 0 12px 32px rgba(0,0,0,.3);}
+  .toast-neutro{border-color:var(--line);}
 
   /* ---- wizard ---- */
   .wizard-overlay{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;padding:28px 22px;}
@@ -866,7 +875,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.20.2</p>
+      <p class="versao-app">Versão 1.21.0</p>
     </div>
   </section>
 
@@ -1384,9 +1393,18 @@
   async function salvarOverrides(){ try{ await storage.set('fin-diario-overrides', JSON.stringify(state.diarioOverrides), false); }catch(e){} }
   async function salvarMetas(){ try{ await storage.set('fin-metas', JSON.stringify(state.metas), false); }catch(e){ mostrarToast('Não consegui salvar agora, tenta de novo'); } }
 
-  function mostrarToast(msg, duracao){
+  function mostrarToast(msg, duracao, tipoForcado){
     const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
+    let tipo = tipoForcado;
+    if(!tipo){
+      if(/falta|informe|escolha|erro ao|não consegui|nenhum arquivo/i.test(msg)) tipo = 'aviso';
+      else if(/exclu[íi]|apagad/i.test(msg)) tipo = 'exclusao';
+      else if(/desfeito|já está|filtrando|lendo|abriu numa aba|confirme os dados|esse valor vem|descartada|voltou pro valor padrão/i.test(msg)) tipo = 'neutro';
+      else tipo = 'sucesso';
+    }
+    const icones = { sucesso:'✅', aviso:'⚠️', exclusao:'🗑️', neutro:'↩️' };
+    t.innerHTML = '<span class="toast-icone">'+icones[tipo]+'</span><span class="toast-texto">'+msg+'</span>';
+    t.className = 'toast toast-'+tipo+' show';
     clearTimeout(mostrarToast._t);
     mostrarToast._t = setTimeout(()=>t.classList.remove('show'), duracao || 1500);
   }
