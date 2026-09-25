@@ -866,7 +866,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.20.1</p>
+      <p class="versao-app">Versão 1.20.2</p>
     </div>
   </section>
 
@@ -1634,12 +1634,14 @@
         if(onChange) onChange(centsFromInput(el));
         return;
       }
-      const c = centsFromInput(el); el.value = c ? fmt(c) : ''; if(onChange) onChange(c);
+      const rawAntes = el.value;
+      const c = centsFromInput(el); el.value = rawAntes==='' ? '' : fmt(c); if(onChange) onChange(c);
     });
     el.addEventListener('blur', () => {
       if(/[+-]/.test(el.value)){
+        const rawAntes = el.value;
         const c = centsFromInput(el);
-        el.value = c ? fmt(c) : '';
+        el.value = rawAntes==='' ? '' : fmt(c);
         if(onChange) onChange(c);
       }
     });
