@@ -875,7 +875,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.21.0</p>
+      <p class="versao-app">Versão 1.21.1</p>
     </div>
   </section>
 
@@ -3428,8 +3428,8 @@
       registrarLog('Configurações', 'editado', 'Salário mensal', fmt(configAoAbrirTela.salarioMensal||0), fmt(state.config.salarioMensal||0),
         { tipo:'config', campo:'salarioMensal', valorAntes: configAoAbrirTela.salarioMensal||0 });
       configAoAbrirTela.salarioMensal = state.config.salarioMensal;
+      salvarConfig();
     }
-    salvarConfig();
   });
   bindMoney(document.getElementById('cfgSaldoInicial'), c => { state.config.saldoInicial = c; });
   document.getElementById('cfgSaldoInicial').addEventListener('blur', async () => {
@@ -3441,9 +3441,9 @@
       registrarLog('Configurações', 'editado', 'Saldo inicial', fmt(configAoAbrirTela.saldoInicial||0), fmt(state.config.saldoInicial||0),
         { tipo:'config', campo:'saldoInicial', valorAntes: configAoAbrirTela.saldoInicial||0 });
       configAoAbrirTela.saldoInicial = state.config.saldoInicial;
+      saldoInicialAoAbrirTela = state.config.saldoInicial;
+      limparCache(); salvarConfig();
     }
-    saldoInicialAoAbrirTela = state.config.saldoInicial;
-    limparCache(); salvarConfig();
   });
   document.getElementById('cfgDataSaldoInicial').addEventListener('change', e => {
     const antesValor = configAoAbrirTela.dataSaldoInicial || null;
@@ -3454,8 +3454,8 @@
       registrarLog('Configurações', 'editado', '"Esse saldo era de que dia?"', antes, depois,
         { tipo:'config', campo:'dataSaldoInicial', valorAntes: antesValor });
       configAoAbrirTela.dataSaldoInicial = state.config.dataSaldoInicial;
+      limparCache(); salvarConfig();
     }
-    limparCache(); salvarConfig();
   });
   bindMoney(document.getElementById('cfgOrcamento'), c => { state.config.orcamentoMensal = c; });
   document.getElementById('cfgOrcamento').addEventListener('blur', () => {
@@ -3463,8 +3463,8 @@
       registrarLog('Configurações', 'editado', 'Orçamento mensal', fmt(configAoAbrirTela.orcamentoMensal||0), fmt(state.config.orcamentoMensal||0),
         { tipo:'config', campo:'orcamentoMensal', valorAntes: configAoAbrirTela.orcamentoMensal||0 });
       configAoAbrirTela.orcamentoMensal = state.config.orcamentoMensal;
+      salvarConfig();
     }
-    salvarConfig();
   });
   bindMoney(document.getElementById('cfgSaldoMinimo'), c => { state.config.saldoMinimo = c; });
   document.getElementById('cfgSaldoMinimo').addEventListener('blur', () => {
@@ -3472,17 +3472,15 @@
       registrarLog('Configurações', 'editado', 'Saldo mínimo de alerta', fmt(configAoAbrirTela.saldoMinimo||0), fmt(state.config.saldoMinimo||0),
         { tipo:'config', campo:'saldoMinimo', valorAntes: configAoAbrirTela.saldoMinimo||0 });
       configAoAbrirTela.saldoMinimo = state.config.saldoMinimo;
+      salvarConfig();
     }
-    salvarConfig();
   });
   document.getElementById('cfgDiaRecebimento').addEventListener('change', e => {
     const v = Math.max(1, Math.min(31, Number(e.target.value) || 0));
-    if(v > 0){
-      if(v !== configAoAbrirTela.diaRecebimento){
-        registrarLog('Configurações', 'editado', 'Dia de recebimento', configAoAbrirTela.diaRecebimento||'(vazio)', v,
-          { tipo:'config', campo:'diaRecebimento', valorAntes: configAoAbrirTela.diaRecebimento||null });
-        configAoAbrirTela.diaRecebimento = v;
-      }
+    if(v > 0 && v !== configAoAbrirTela.diaRecebimento){
+      registrarLog('Configurações', 'editado', 'Dia de recebimento', configAoAbrirTela.diaRecebimento||'(vazio)', v,
+        { tipo:'config', campo:'diaRecebimento', valorAntes: configAoAbrirTela.diaRecebimento||null });
+      configAoAbrirTela.diaRecebimento = v;
       state.config.diaRecebimento = v; limparCache(); salvarConfig();
     }
     e.target.value = state.config.diaRecebimento || '';
@@ -3496,8 +3494,9 @@
       if(antes !== '(vazio)'){
         registrarLog('Configurações', 'editado', '2º dia de recebimento', antes, '(vazio)', { tipo:'config', campo:'diaRecebimento2', valorAntes: antesValor });
         configAoAbrirTela.diaRecebimento2 = null;
+        salvarConfig();
       }
-      salvarConfig(); return;
+      return;
     }
     const v = Math.max(1, Math.min(31, Number(raw) || 0));
     state.config.diaRecebimento2 = v > 0 ? v : null;
@@ -3505,9 +3504,9 @@
       registrarLog('Configurações', 'editado', '2º dia de recebimento', antes, state.config.diaRecebimento2||'(vazio)',
         { tipo:'config', campo:'diaRecebimento2', valorAntes: antesValor });
       configAoAbrirTela.diaRecebimento2 = state.config.diaRecebimento2;
+      salvarConfig();
     }
     e.target.value = state.config.diaRecebimento2 || '';
-    salvarConfig();
   });
   bindMoney(document.getElementById('cfgSaldoReal'));
   bindMoney(document.getElementById('cfgDiarioValor'));
