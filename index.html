@@ -132,6 +132,11 @@
   .log-versao li{font-size:12.5px;color:var(--ink);line-height:1.6;}
   .btn-desfazer-log{background:rgba(255,107,133,.12);border:1px solid rgba(255,107,133,.35);color:var(--danger);font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:inherit;}
   .log-desfeito-tag{font-size:11px;color:var(--ink-soft);opacity:.7;margin:0;font-style:italic;}
+  .diario-item-linha{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);}
+  .diario-item-linha:last-child{border-bottom:none;}
+  .diario-item-info{display:flex;align-items:baseline;gap:8px;}
+  .diario-item-desc{font-size:12.5px;color:var(--ink-soft);}
+  .diario-item-remover{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:0 6px;line-height:1;}
   .ajuste-linhas div{flex:1;background:var(--surface-alt);border-radius:10px;padding:8px 10px;}
   .ajuste-linhas span{display:block;font-size:10.5px;color:var(--ink-faint);margin-bottom:2px;}
   .ajuste-linhas b{display:block;font-size:14px;font-weight:600;}
@@ -861,7 +866,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.19.1</p>
+      <p class="versao-app">Versão 1.20.0</p>
     </div>
   </section>
 
@@ -963,16 +968,24 @@
       <button class="modal-close" data-close-modal type="button">✕</button>
       <h2 class="modal-title" id="diaDiarioTitulo">Diário do dia</h2>
       <input type="hidden" id="diaDiarioIso">
-      <div class="field"><label>Gasto nesse dia</label>
+
+      <div id="diaDiarioListaBox" style="display:none;margin-bottom:16px;">
+        <p class="ajuste-titulo">O que já foi lançado hoje</p>
+        <div id="diaDiarioLista"></div>
+        <div class="ajuste-resultado pos" id="diaDiarioTotalLinha" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="field"><label>Novo gasto</label>
         <div class="valor-soma-row">
           <input id="diaDiarioValor" inputmode="numeric" placeholder="R$ 0,00">
           <button type="button" class="btn-somar" data-somar="diaDiarioValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
         </div>
       </div>
-      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Isso muda só esse dia. Os outros continuam com o valor padrão.</p>
+      <div class="field"><label>Descrição (opcional)</label><input type="text" id="diaDiarioDescricao" placeholder="Ex: café, uber, farmácia..."></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Cada lançamento fica guardado como um item — nada é sobrescrito. Isso muda só esse dia; os outros continuam com o valor padrão.</p>
       <div class="modal-acoes">
-        <button class="btn-secundario" id="btnDiaDiarioRemover" style="display:none;">Voltar ao padrão</button>
-        <button class="btn-primario" id="btnDiaDiarioSalvar">Salvar</button>
+        <button class="btn-secundario" id="btnDiaDiarioRemover" style="display:none;">Limpar tudo (voltar ao padrão)</button>
+        <button class="btn-primario" id="btnDiaDiarioSalvar">Adicionar</button>
       </div>
     </div>
   </div>
@@ -1256,6 +1269,9 @@
       }else{
         state.movimentacoes.push(d.snapshot);
       }
+      limparCache(); await salvarMovimentacoes();
+    }else if(d.tipo === 'diario-limpar-tudo'){
+      d.snapshot.forEach(item => state.movimentacoes.push(item));
       limparCache(); await salvarMovimentacoes();
     }else if(d.tipo === 'meta-criada'){
       state.metas = state.metas.filter(m => m.id !== d.id);
@@ -2984,6 +3000,36 @@
   }
 
   bindMoney(document.getElementById('diaDiarioValor'));
+  function renderDiaDiarioLista(iso){
+    const itens = state.movimentacoes.filter(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
+    const listaBox = document.getElementById('diaDiarioListaBox');
+    const btnRemover = document.getElementById('btnDiaDiarioRemover');
+    if(itens.length === 0){
+      listaBox.style.display = 'none';
+      btnRemover.style.display = 'none';
+      return;
+    }
+    listaBox.style.display = 'block';
+    btnRemover.style.display = 'inline-block';
+    const total = itens.reduce((a,m)=>a+m.valor,0);
+    document.getElementById('diaDiarioLista').innerHTML = itens.map(m => {
+      const desc = (m.descricao && m.descricao !== 'Ajuste manual do dia') ? m.descricao : 'Gasto';
+      return '<div class="diario-item-linha"><div class="diario-item-info"><span class="diario-item-desc">'+desc+'</span><b class="mono neg">'+fmt(m.valor)+'</b></div>'+
+        '<button type="button" class="diario-item-remover" data-item-id="'+m.id+'">✕</button></div>';
+    }).join('');
+    document.getElementById('diaDiarioTotalLinha').innerHTML = 'Total do dia: <span class="valor">'+fmt(total)+'</span>';
+    document.querySelectorAll('.diario-item-remover').forEach(btn => btn.addEventListener('click', async () => {
+      const itemId = btn.dataset.itemId;
+      const item = state.movimentacoes.find(mv => mv.id === itemId);
+      if(!item) return;
+      if(!await confirmarApp('Remover esse item?', 'Remover')) return;
+      registrarLog('Diário', 'excluído', (item.descricao||'Gasto')+' de '+formatBR(iso), fmt(item.valor), null, { tipo:'mov-excluido', snapshot: JSON.parse(JSON.stringify(item)) });
+      state.movimentacoes = state.movimentacoes.filter(mv => mv.id !== itemId);
+      limparCache(); await salvarMovimentacoes();
+      renderDiaDiarioLista(iso);
+      renderTelaAtual();
+    }));
+  }
   function abrirEditorDiarioDia(iso){
     const [y,m,d] = iso.split('-').map(Number);
     const tituloEl = document.getElementById('diaDiarioTitulo');
@@ -2994,42 +3040,41 @@
       tituloEl.textContent = 'Diário de ' + String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+y;
     }
     document.getElementById('diaDiarioIso').value = iso;
-    const avulso = state.movimentacoes.find(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
-    const inputValor = document.getElementById('diaDiarioValor');
-    setMoneyValue(inputValor, avulso ? avulso.valor : diarioValorParaDia(iso));
-    document.getElementById('btnDiaDiarioRemover').style.display = avulso ? 'inline-block' : 'none';
+    document.getElementById('diaDiarioValor').value = '';
+    document.getElementById('diaDiarioDescricao').value = '';
+    renderDiaDiarioLista(iso);
     document.getElementById('modalDiarioDia').classList.add('show');
-    // seleciona o valor já preenchido, pra dar pra digitar por cima na hora, sem precisar apagar primeiro
-    setTimeout(() => { inputValor.focus(); inputValor.select(); }, 50);
+    setTimeout(() => document.getElementById('diaDiarioValor').focus(), 50);
   }
   document.getElementById('btnDiaDiarioSalvar').addEventListener('click', async () => {
     const iso = document.getElementById('diaDiarioIso').value;
     const valor = centsFromInput(document.getElementById('diaDiarioValor'));
-    const avulso = state.movimentacoes.find(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
-    const valorAntes = avulso ? avulso.valor : diarioValorParaDia(iso);
-    const snapshotAvulsoAntes = avulso ? JSON.parse(JSON.stringify(avulso)) : null;
-    if(avulso){
-      avulso.valor = valor;
-    }else{
-      state.movimentacoes.push({
-        id: uid(), data: iso, tipo:'diario', valor, categoria:'Outros',
-        descricao:'Ajuste manual do dia', formaPagamento:'Dinheiro',
-        recorrente:false, recorrenteDiario:false, recorrenteQtdMeses:null,
-        origemRecorrenteId:null, criadoEm:new Date().toISOString()
-      });
-    }
-    if(valorAntes !== valor) registrarLog('Diário', 'editado', 'Gasto diário de '+formatBR(iso), fmt(valorAntes), fmt(valor), { tipo:'diario-editado', iso, snapshot: snapshotAvulsoAntes });
+    if(valor <= 0){ mostrarToast('Informe um valor'); return; }
+    const descricao = document.getElementById('diaDiarioDescricao').value.trim() || 'Gasto';
+    const novoItem = {
+      id: uid(), data: iso, tipo:'diario', valor, categoria:'Outros',
+      descricao, formaPagamento:'Dinheiro',
+      recorrente:false, recorrenteDiario:false, recorrenteQtdMeses:null,
+      origemRecorrenteId:null, criadoEm:new Date().toISOString()
+    };
+    state.movimentacoes.push(novoItem);
+    registrarLog('Diário', 'criado', descricao+' de '+formatBR(iso), null, fmt(valor), { tipo:'mov-criado', id: novoItem.id });
     limparCache(); await salvarMovimentacoes();
-    document.getElementById('modalDiarioDia').classList.remove('show');
-    mostrarToast('Diário do dia atualizado');
+    document.getElementById('diaDiarioValor').value = '';
+    document.getElementById('diaDiarioDescricao').value = '';
+    renderDiaDiarioLista(iso);
+    mostrarToast('Adicionado');
     renderTelaAtual();
+    document.getElementById('diaDiarioValor').focus();
   });
   document.getElementById('btnDiaDiarioRemover').addEventListener('click', async () => {
     const iso = document.getElementById('diaDiarioIso').value;
-    const avulsoRemovido = state.movimentacoes.find(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
+    const itensRemovidos = state.movimentacoes.filter(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
+    if(itensRemovidos.length === 0) return;
+    if(!await confirmarApp('Isso vai apagar todos os '+itensRemovidos.length+' itens lançados hoje, voltando pro valor padrão. Continuar?', 'Limpar tudo')) return;
     state.movimentacoes = state.movimentacoes.filter(mv => !(mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario));
-    registrarLog('Diário', 'editado', 'Gasto diário de '+formatBR(iso), null, 'voltou ao valor padrão',
-      avulsoRemovido ? { tipo:'diario-editado', iso, snapshot: JSON.parse(JSON.stringify(avulsoRemovido)) } : null);
+    registrarLog('Diário', 'excluído', 'Todos os itens de '+formatBR(iso), itensRemovidos.length+' itens', 'voltou ao valor padrão',
+      { tipo:'diario-limpar-tudo', iso, snapshot: JSON.parse(JSON.stringify(itensRemovidos)) });
     limparCache(); await salvarMovimentacoes();
     document.getElementById('modalDiarioDia').classList.remove('show');
     mostrarToast('Voltou pro valor padrão');
