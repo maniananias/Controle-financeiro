@@ -866,7 +866,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.20.0</p>
+      <p class="versao-app">Versão 1.20.1</p>
     </div>
   </section>
 
@@ -982,7 +982,7 @@
         </div>
       </div>
       <div class="field"><label>Descrição (opcional)</label><input type="text" id="diaDiarioDescricao" placeholder="Ex: café, uber, farmácia..."></div>
-      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Cada lançamento fica guardado como um item — nada é sobrescrito. Isso muda só esse dia; os outros continuam com o valor padrão.</p>
+      <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Cada lançamento fica guardado como um item. Nada é sobrescrito. Isso muda só esse dia; os outros continuam com o valor padrão.</p>
       <div class="modal-acoes">
         <button class="btn-secundario" id="btnDiaDiarioRemover" style="display:none;">Limpar tudo (voltar ao padrão)</button>
         <button class="btn-primario" id="btnDiaDiarioSalvar">Adicionar</button>
@@ -2399,7 +2399,7 @@
     const avisoExtra = document.getElementById('simAvisoMesTotal');
     if(riscoDepoisDoFolego){
       const nomeMes2 = MESES[riscoDepoisDoFolego.mes]+'/'+riscoDepoisDoFolego.ano;
-      avisoExtra.innerHTML = '⚠️ Mesmo com o Fôlego de '+nomeMes2+' dando positivo, o mês inteiro fecha no vermelho (<span class="valor">'+fmt(Math.abs(riscoDepoisDoFolego.simulado))+'</span>) — deve ter uma conta vencendo depois do salário.';
+      avisoExtra.innerHTML = '⚠️ Mesmo com o Fôlego de '+nomeMes2+' dando positivo, o mês inteiro fecha no vermelho (<span class="valor">'+fmt(Math.abs(riscoDepoisDoFolego.simulado))+'</span>). Deve ter uma conta vencendo depois do salário.';
       avisoExtra.style.display = 'block';
     }else{
       avisoExtra.style.display = 'none';
@@ -2802,7 +2802,7 @@
     if(aplicarTodas && origemId){
       if(!await confirmarApp('Isso vai excluir TODAS as repetições dessa conta (passadas e futuras). Continuar?', 'Excluir série')) return;
       // exclusão de série inteira também fica sem desfazer (muitos registros ao mesmo tempo)
-      registrarLog('Movimentações', 'excluído', (atual.categoria||'Movimentação')+' — série inteira (recorrente)', fmt(atual.valor), null, null);
+      registrarLog('Movimentações', 'excluído', (atual.categoria||'Movimentação')+' (série inteira, recorrente)', fmt(atual.valor), null, null);
       state.movimentacoes = state.movimentacoes.filter(m => m.id !== origemId && m.origemRecorrenteId !== origemId);
     }else{
       if(!await confirmarApp('Excluir esta movimentação?', 'Excluir')) return;
@@ -3048,9 +3048,11 @@
   }
   document.getElementById('btnDiaDiarioSalvar').addEventListener('click', async () => {
     const iso = document.getElementById('diaDiarioIso').value;
-    const valor = centsFromInput(document.getElementById('diaDiarioValor'));
-    if(valor <= 0){ mostrarToast('Informe um valor'); return; }
-    const descricao = document.getElementById('diaDiarioDescricao').value.trim() || 'Gasto';
+    const campoValor = document.getElementById('diaDiarioValor');
+    if(campoValor.value.trim() === ''){ mostrarToast('Informe um valor'); return; }
+    const valor = centsFromInput(campoValor);
+    if(valor < 0){ mostrarToast('Informe um valor'); return; }
+    const descricao = document.getElementById('diaDiarioDescricao').value.trim() || (valor===0 ? 'Sem gasto' : 'Gasto');
     const novoItem = {
       id: uid(), data: iso, tipo:'diario', valor, categoria:'Outros',
       descricao, formaPagamento:'Dinheiro',
