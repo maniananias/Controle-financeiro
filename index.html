@@ -362,6 +362,10 @@
     width:100%;max-width:100%;min-width:0;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background-color:var(--surface-alt);color:var(--ink);font-size:16px;font-family:inherit;
   }
   .field input[type=date]{-webkit-appearance:none;appearance:none;color-scheme:dark;}
+  /* dica visual "dd/mm/aaaa" por cima do campo — o iOS às vezes não desenha nenhum texto quando o
+     campo de data está vazio, então desenhamos a nossa própria dica, que some assim que tiver valor */
+  .campo-data-wrap{position:relative;}
+  .campo-data-dica{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-soft);font-size:15px;pointer-events:none;opacity:.65;}
   .field select{padding-right:30px;}
   .valor-soma-row{display:flex;gap:6px;align-items:stretch;}
   .valor-soma-row input{flex:1;min-width:0;}
@@ -662,7 +666,7 @@
         <button type="button" class="btn-somar" data-somar="simValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
       </div>
     </div>
-    <div class="field"><label>Data</label><input type="date" id="simData"></div>
+    <div class="field"><label>Data</label><div class="campo-data-wrap"><input type="date" id="simData"><span class="campo-data-dica" data-para="simData">dd/mm/aaaa</span></div></div>
     <div class="field"><label>Categoria</label><select id="simCategoria"></select></div>
     <div class="checkbox-row"><input type="checkbox" id="simRecorrente"><label for="simRecorrente">Repetir todo mês</label></div>
     <div class="field sim-campo-aninhado" id="simCampoQtd" style="display:none;"><label>Por quantos meses? (deixe vazio para sempre)</label><input type="number" id="simQtd" inputmode="numeric" min="1" placeholder="Ex: 5"></div>
@@ -705,7 +709,7 @@
       </div>
     </div>
 
-    <div class="field"><label>Data que vai tirar as férias</label><input type="date" id="feriasDataInicio"></div>
+    <div class="field"><label>Data que vai tirar as férias</label><div class="campo-data-wrap"><input type="date" id="feriasDataInicio"><span class="campo-data-dica" data-para="feriasDataInicio">dd/mm/aaaa</span></div></div>
 
     <div id="feriasCampoDias" class="field"><label>Quantidade de dias</label><input type="number" id="feriasDiasTirados" inputmode="numeric" min="1" max="30" placeholder="Ex: 20"></div>
 
@@ -715,7 +719,7 @@
       <p id="feriasAvisoDias" class="ferias-aviso" style="display:none;"></p>
     </div>
 
-    <div class="field"><label>Data que espera receber</label><input type="date" id="feriasData"></div>
+    <div class="field"><label>Data que espera receber</label><div class="campo-data-wrap"><input type="date" id="feriasData"><span class="campo-data-dica" data-para="feriasData">dd/mm/aaaa</span></div></div>
 
     <div class="field"><label>Desconto estimado (INSS + IR, opcional)</label>
       <div class="valor-soma-row">
@@ -775,8 +779,8 @@
     <div class="field"><label>Meses trabalhados no ano</label><input type="number" id="decimoMeses" inputmode="numeric" min="1" max="12" value="12"></div>
     <p class="ferias-dica">Trabalhou o ano inteiro? Deixa 12. Cada mês com 15 dias ou mais trabalhados conta como 1 mês inteiro pra essa conta.</p>
 
-    <div class="field"><label>Data da 1ª parcela</label><input type="date" id="decimoData1"></div>
-    <div class="field"><label>Data da 2ª parcela</label><input type="date" id="decimoData2"></div>
+    <div class="field"><label>Data da 1ª parcela</label><div class="campo-data-wrap"><input type="date" id="decimoData1"><span class="campo-data-dica" data-para="decimoData1">dd/mm/aaaa</span></div></div>
+    <div class="field"><label>Data da 2ª parcela</label><div class="campo-data-wrap"><input type="date" id="decimoData2"><span class="campo-data-dica" data-para="decimoData2">dd/mm/aaaa</span></div></div>
 
     <div class="field"><label>Desconto estimado na 2ª parcela (INSS + IR, opcional)</label>
       <div class="valor-soma-row">
@@ -826,7 +830,7 @@
           <button type="button" class="btn-somar" data-somar="cfgSaldoInicial" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
         </div>
       </div>
-      <div class="field"><label>Esse saldo era de que dia?</label><input type="date" id="cfgDataSaldoInicial"></div>
+      <div class="field"><label>Esse saldo era de que dia?</label><div class="campo-data-wrap"><input type="date" id="cfgDataSaldoInicial"><span class="campo-data-dica" data-para="cfgDataSaldoInicial">dd/mm/aaaa</span></div></div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;line-height:1.5;">Antes dessa data, o app não soma nem subtrai nenhum lançamento no seu saldo. Ele fica parado nesse valor até chegar nesse dia.</p>
       <div class="field"><label>Dia de recebimento</label><input id="cfgDiaRecebimento" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 25"></div>
       <div class="field"><label>2º dia de recebimento (opcional, se recebe 2x no mês)</label><input id="cfgDiaRecebimento2" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex: 15"></div>
@@ -878,7 +882,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.23.4</p>
+      <p class="versao-app">Versão 1.24.0</p>
     </div>
   </section>
 
@@ -939,7 +943,7 @@
         <button type="button" id="btnTipoSaida">↓ Saída</button>
         <button type="button" id="btnTipoDiario">🔁 Diário</button>
       </div>
-      <div class="field"><label>Data</label><input type="date" id="movData"></div>
+      <div class="field"><label>Data</label><div class="campo-data-wrap"><input type="date" id="movData"><span class="campo-data-dica" data-para="movData">dd/mm/aaaa</span></div></div>
       <div class="field"><label>Valor</label>
         <div class="valor-soma-row">
           <input id="movValor" inputmode="numeric" placeholder="R$ 0,00">
@@ -1026,7 +1030,7 @@
           <button type="button" class="btn-somar" data-somar="metaValor" title="Somar outro valor (digite os números, a vírgula aparece sozinha)">+</button>
         </div>
       </div>
-      <div class="field"><label>Prazo</label><input type="date" id="metaPrazo"></div>
+      <div class="field"><label>Prazo</label><div class="campo-data-wrap"><input type="date" id="metaPrazo"><span class="campo-data-dica" data-para="metaPrazo">dd/mm/aaaa</span></div></div>
       <div class="modal-acoes">
         <button class="btn-excluir" id="btnExcluirMeta" style="display:none;">Excluir</button>
         <button class="btn-primario" id="btnSalvarMeta">Salvar</button>
@@ -1668,6 +1672,26 @@
     });
   }
   function setMoneyValue(el, cents){ el.value = cents ? fmt(cents) : ''; }
+  // mostra/esconde a dica "dd/mm/aaaa" por cima de um campo de data, conforme ele tem valor ou não
+  function atualizarDicaData(inputId){
+    const input = document.getElementById(inputId);
+    const dica = document.querySelector('.campo-data-dica[data-para="'+inputId+'"]');
+    if(!input || !dica) return;
+    dica.style.display = input.value ? 'none' : 'block';
+  }
+  function ativarDicasDeData(){
+    document.querySelectorAll('.campo-data-dica').forEach(dica => {
+      const inputId = dica.dataset.para;
+      const input = document.getElementById(inputId);
+      if(!input) return;
+      atualizarDicaData(inputId);
+      if(!input._dicaAtiva){
+        input.addEventListener('input', () => atualizarDicaData(inputId));
+        input.addEventListener('change', () => atualizarDicaData(inputId));
+        input._dicaAtiva = true;
+      }
+    });
+  }
   document.querySelectorAll('.btn-somar').forEach(btn => btn.addEventListener('click', () => {
     const el = document.getElementById(btn.dataset.somar);
     if(!el) return;
@@ -1997,7 +2021,7 @@
 
   function renderSimulacaoTela(){
     document.getElementById('simCategoria').innerHTML = CATEGORIAS.map(c=>'<option value="'+c+'">'+(CAT_ICONES[c]||'')+' '+c+'</option>').join('');
-    document.getElementById('simData').value = todayISO();
+    document.getElementById('simData').value = todayISO(); atualizarDicaData('simData');
     document.getElementById('resultadoSimulacao').style.display = 'none';
   }
   bindMoney(document.getElementById('simValor'));
@@ -2123,6 +2147,7 @@
   function renderFeriasTela(){
     document.getElementById('feriasData').value = todayISO();
     document.getElementById('feriasDataInicio').value = todayISO();
+    atualizarDicaData('feriasData'); atualizarDicaData('feriasDataInicio');
     document.getElementById('feriasDiasTirados').value = '';
     document.getElementById('feriasDesconto').value = '';
     setMoneyValue(document.getElementById('feriasSalario'), valorSalarioAtual());
@@ -2259,6 +2284,7 @@
     const hoje = new Date();
     document.getElementById('decimoData1').value = isoDate(hoje.getFullYear(), 10, 30); // 30/nov
     document.getElementById('decimoData2').value = isoDate(hoje.getFullYear(), 11, 20); // 20/dez
+    atualizarDicaData('decimoData1'); atualizarDicaData('decimoData2');
     document.getElementById('decimoResultadoBox').style.display = 'none';
     document.getElementById('btnLancarDecimo').style.display = 'none';
     ultimoCalculoDecimo = null;
@@ -2531,7 +2557,7 @@
     if(!ultimaSimulacao) return;
     abrirModalMov(null);
     setTipoModal(ultimaSimulacao.tipo, false);
-    document.getElementById('movData').value = ultimaSimulacao.data;
+    document.getElementById('movData').value = ultimaSimulacao.data; atualizarDicaData('movData');
     setMoneyValue(document.getElementById('movValor'), ultimaSimulacao.valor);
     document.getElementById('movCategoria').value = ultimaSimulacao.categoria;
     document.getElementById('movRecorrente').checked = ultimaSimulacao.recorrente;
@@ -2768,7 +2794,7 @@
       document.getElementById('movId').value = m.id;
       setTipoModal(m.tipo, false);
       document.getElementById('btnTipoDiario').style.display = m.tipo==='diario' ? 'block' : 'none';
-      document.getElementById('movData').value = m.data;
+      document.getElementById('movData').value = m.data; atualizarDicaData('movData');
       setMoneyValue(document.getElementById('movValor'), m.valor);
       document.getElementById('movCategoria').value = m.categoria;
       document.getElementById('movDescricao').value = m.descricao || '';
@@ -2785,7 +2811,7 @@
       document.getElementById('movId').value = '';
       setTipoModal('saida', false);
       document.getElementById('btnTipoDiario').style.display = 'none';
-      document.getElementById('movData').value = todayISO();
+      document.getElementById('movData').value = todayISO(); atualizarDicaData('movData');
       document.getElementById('movValor').value = '';
       document.getElementById('movDescricao').value = '';
       document.getElementById('movCategoria').value = '';
@@ -3380,14 +3406,14 @@
       document.getElementById('metaId').value = meta.id;
       document.getElementById('metaNome').value = meta.nome;
       setMoneyValue(document.getElementById('metaValor'), meta.valorObjetivo);
-      document.getElementById('metaPrazo').value = meta.dataLimite;
+      document.getElementById('metaPrazo').value = meta.dataLimite; atualizarDicaData('metaPrazo');
     }else{
       document.getElementById('metaId').value = '';
       document.getElementById('metaNome').value = '';
       document.getElementById('metaValor').value = '';
       const d = new Date();
       d.setMonth(d.getMonth()+3); // sugestão de prazo padrão (3 meses), editável — só pra não ficar em branco
-      document.getElementById('metaPrazo').value = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+      document.getElementById('metaPrazo').value = isoDate(d.getFullYear(), d.getMonth(), d.getDate()); atualizarDicaData('metaPrazo');
     }
     document.getElementById('modalMeta').classList.add('show');
   }
@@ -3465,7 +3491,7 @@
     setMoneyValue(document.getElementById('cfgSalarioMensal'), state.config.salarioMensal || 0);
     saldoInicialAoAbrirTela = state.config.saldoInicial;
     setMoneyValue(document.getElementById('cfgSaldoInicial'), state.config.saldoInicial);
-    document.getElementById('cfgDataSaldoInicial').value = state.config.dataSaldoInicial || '';
+    document.getElementById('cfgDataSaldoInicial').value = state.config.dataSaldoInicial || ''; atualizarDicaData('cfgDataSaldoInicial');
     setMoneyValue(document.getElementById('cfgOrcamento'), state.config.orcamentoMensal);
     setMoneyValue(document.getElementById('cfgSaldoMinimo'), state.config.saldoMinimo);
     document.getElementById('cfgDiaRecebimento').value = state.config.diaRecebimento || '';
@@ -3854,6 +3880,7 @@
     }else{
       irPara('dashboard');
     }
+    ativarDicasDeData();
     // garante 2 segundos de tela de carregamento visível, não importa quão rápido os dados carregarem
     await esperaMinima;
     const telaCarregando = document.getElementById('telaCarregando');
