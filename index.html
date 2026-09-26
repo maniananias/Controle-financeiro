@@ -168,6 +168,7 @@
   .folego-mes-header{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:6px;}
   .folego-mes-header small{font-weight:500;color:var(--ink-soft);opacity:.7;}
   .folego-comparativo{display:flex;align-items:center;gap:8px;}
+  .folego-pior-dia-nota{font-size:11px;color:var(--gold);margin:8px 0 0;line-height:1.5;}
   .folego-col{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
   .folego-rotulo{font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);opacity:.6;}
   .folego-col b{font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:700;}
@@ -360,7 +361,7 @@
   .field input, .field select, .field textarea{
     width:100%;max-width:100%;min-width:0;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background-color:var(--surface-alt);color:var(--ink);font-size:16px;font-family:inherit;
   }
-  .field input[type=date]{-webkit-appearance:none;appearance:none;}
+  .field input[type=date]{-webkit-appearance:none;appearance:none;color-scheme:dark;}
   .field select{padding-right:30px;}
   .valor-soma-row{display:flex;gap:6px;align-items:stretch;}
   .valor-soma-row input{flex:1;min-width:0;}
@@ -673,6 +674,7 @@
       <div class="sim-veredito neg" id="simAvisoMesTotal" style="display:none;font-size:12.5px;margin-top:-6px;"></div>
       <div class="ajuste-box" id="simFolegoBox" style="display:none;">
         <p class="ajuste-titulo">Fôlego mês a mês: com x sem essa decisão</p>
+        <p id="simFolegoNota" style="font-size:11.5px;color:var(--ink-soft);margin:-4px 0 10px;line-height:1.5;"></p>
         <div id="simFolegoLista"></div>
       </div>
       <div class="chart-box">
@@ -876,7 +878,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.22.0</p>
+      <p class="versao-app">Versão 1.23.4</p>
     </div>
   </section>
 
@@ -2347,7 +2349,7 @@
     const simAno = ay, simMes = am-1;
     const sinal = tipoSim==='entrada' ? 1 : -1;
     const resultados = [];
-    let parcelasUsadas = 0;
+    let numeroParcela = 0;
     for(let i=0; i<12; i++){
       const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
       const ano = d.getFullYear(), mes = d.getMonth();
@@ -2359,21 +2361,38 @@
       // antes do mês da decisão — ainda não existe, não mostra
       if(diferencaMeses < 0) continue;
 
+      // decisão que não repete: se a véspera desse mês já passou (ex: decisão de hoje, mas o salário
+      // já caiu), esse checkpoint não serve mais de referência — pula pro próximo mês, que ainda não chegou
+      if(!recorrenteSim){
+        const vesperaIso = ano+'-'+String(mes+1).padStart(2,'0')+'-'+String(diaAntes).padStart(2,'0');
+        if(vesperaIso < todayISO()) continue;
+      }
+
       const dias = saldosDiariosDoMes(ano, mes);
       const baseline = dias[diaAntes-1].saldo;
 
       // uma parcela recorrente por mês (não acumula as anteriores); gasto único conta uma vez e persiste dali pra frente.
-      // sempre desconta no mês em que a parcela foi lançada, não importa o dia exato dentro do mês
+      // sempre desconta no mês em que a parcela foi lançada, não importa o dia exato dentro do mês.
+      // parcelaAtual só existe quando "repetir todo mês" está marcado — dá pra saber, olhando a lista,
+      // que aquele mês é a 2ª, 3ª parcela etc., não um gasto novo.
       let ocorrencias = 1;
-      if(recorrenteSim && qtdSim && ocorrencias === 1){
-        if(parcelasUsadas >= qtdSim) ocorrencias = 0;
-        else parcelasUsadas++;
+      let parcelaAtual = null;
+      if(recorrenteSim){
+        if(qtdSim && numeroParcela >= qtdSim){
+          ocorrencias = 0;
+        }else{
+          numeroParcela++;
+          parcelaAtual = numeroParcela;
+        }
       }
 
       const impacto = sinal * ocorrencias * valorCents;
-      resultados.push({ano, mes, diaAntes, baseline, simulado: baseline+impacto});
+      resultados.push({ano, mes, diaAntes, baseline, simulado: baseline+impacto, parcelaAtual, parcelaTotal: qtdSim});
+      // decisão que não repete: o efeito é sempre o mesmo valor fixo em todo mês daqui pra frente — mostrar
+      // 12 meses repetindo a mesma coisa não ajuda, só um checkpoint válido já basta
+      if(!recorrenteSim) break;
       // já mostrou todos os meses com parcela ativa e mais um mês depois (confirmando que acabou) — pode parar
-      if(recorrenteSim && qtdSim && parcelasUsadas >= qtdSim && ocorrencias === 0 && diferencaMeses > 0) break;
+      if(recorrenteSim && qtdSim && numeroParcela >= qtdSim && ocorrencias === 0 && diferencaMeses > 0) break;
     }
     return resultados;
   }
@@ -2453,16 +2472,26 @@
       folegoBox.style.display = 'none';
     }else{
       folegoBox.style.display = 'block';
+      document.getElementById('simFolegoNota').innerHTML = 'Essa lista olha só a véspera do salário de cada mês. O resumo acima já verifica o mês inteiro, dia a dia. Pode ter um dia mais apertado no meio do caminho que não aparece aqui embaixo.';
       document.getElementById('simFolegoLista').innerHTML = folegoResultados.map(r => {
         const corBase = r.simulado>=limiteSeguranca ? 'pos' : 'neg';
         const ficouInseguro = r.baseline>=limiteSeguranca && r.simulado<limiteSeguranca;
+        const parcelaTexto = r.parcelaAtual
+          ? ' · '+r.parcelaAtual+'ª'+(r.parcelaTotal ? ' de '+r.parcelaTotal : '')+' parcela'
+          : '';
+        const piorEhNesseMes = piorIso && piorIso.slice(0,4)===String(r.ano) && (Number(piorIso.slice(5,7))-1)===r.mes;
+        const vesperaIso = r.ano+'-'+String(r.mes+1).padStart(2,'0')+'-'+String(r.diaAntes).padStart(2,'0');
+        const notaPiorDia = (piorEhNesseMes && piorIso !== vesperaIso)
+          ? '<p class="folego-pior-dia-nota">O dia mais apertado desse mês foi '+formatBR(piorIso)+', diferente da véspera do salário.</p>'
+          : '';
         return '<div class="folego-linha-v2">'+
-          '<div class="folego-mes-header">'+MESES[r.mes]+'/'+r.ano+' <small>(dia '+r.diaAntes+')</small></div>'+
+          '<div class="folego-mes-header">'+MESES[r.mes]+'/'+r.ano+' <small>(dia '+r.diaAntes+parcelaTexto+')</small></div>'+
           '<div class="folego-comparativo">'+
             '<div class="folego-col"><span class="folego-rotulo">Sem decisão</span><b class="folego-valor-neutro">'+fmt(r.baseline)+'</b></div>'+
             '<span class="folego-seta">→</span>'+
             '<div class="folego-col"><span class="folego-rotulo">Com decisão</span><b class="'+corBase+'">'+fmt(r.simulado)+(ficouInseguro?' ⚠':'')+'</b></div>'+
           '</div>'+
+          notaPiorDia+
         '</div>';
       }).join('');
     }
