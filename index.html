@@ -681,7 +681,11 @@
         <p id="simFolegoNota" style="font-size:11.5px;color:var(--ink-soft);margin:-4px 0 10px;line-height:1.5;"></p>
         <div id="simFolegoLista"></div>
       </div>
-      <div class="chart-box">
+      <div class="ajuste-box" id="simTrechoApertadoBox" style="display:none;">
+        <p class="ajuste-titulo">Onde exatamente vai apertar</p>
+        <div id="simTrechoApertadoLista"></div>
+      </div>
+      <div class="chart-box" id="simChartBox">
         <h3>Saldo projetado: com x sem essa decisão</h3>
         <div class="chart-canvas-wrap"><canvas id="chartSimulacao"></canvas></div>
       </div>
@@ -882,7 +886,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.24.0</p>
+      <p class="versao-app">Versão 1.25.2</p>
     </div>
   </section>
 
@@ -2426,13 +2430,15 @@
   // varre TODO dia (não só a véspera do salário) de cada mês afetado, aplicando o impacto FIXO daquele mês
   // (mesma regra de "não acumular parcelas anteriores" do calcularFolegoComSimulacao) — acha o dia mais
   // apertado de verdade, mesmo quando uma conta vence no meio do mês, longe do checkpoint mensal
-  function acharPiorDiaComSimulacaoFixo(dataSim, tipoSim, valorCents, recorrenteSim, qtdSim){
+  function acharPiorDiaComSimulacaoFixo(dataSim, tipoSim, valorCents, recorrenteSim, qtdSim, limiteSeguranca){
     const hoje = new Date();
     const [ay,am] = dataSim.split('-').map(Number);
     const simAno = ay, simMes = am-1;
     const sinal = tipoSim==='entrada' ? 1 : -1;
     let pior = Infinity, piorIso = null;
     let parcelasUsadas = 0;
+    const diasApertados = []; // guarda todo dia onde o saldo com a decisão fica abaixo da reserva mínima
+    const impactoPorMes = {}; // "ano-mes" -> impacto fixo daquele mês, pra poder recalcular o saldo de qualquer dia depois
     for(let i=0; i<12; i++){
       const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
       const ano = d.getFullYear(), mes = d.getMonth();
@@ -2446,17 +2452,21 @@
         else parcelasUsadas++;
       }
       const impactoDoMes = sinal * ocorrencias * valorCents;
+      impactoPorMes[ano+'-'+mes] = impactoDoMes;
 
       const dias = saldosDiariosDoMes(ano, mes);
       dias.forEach(dObj => {
         if(dObj.iso < dataSim) return; // antes da decisão acontecer, o impacto ainda não existe
         const comImpacto = dObj.saldo + impactoDoMes;
         if(comImpacto < pior){ pior = comImpacto; piorIso = dObj.iso; }
+        if(typeof limiteSeguranca === 'number' && comImpacto < limiteSeguranca){
+          diasApertados.push({ iso: dObj.iso, baseline: dObj.saldo, comDecisao: comImpacto });
+        }
       });
 
       if(recorrenteSim && qtdSim && parcelasUsadas >= qtdSim && ocorrencias === 0 && diferencaMeses > 0) break;
     }
-    return { pior, piorIso };
+    return { pior, piorIso, diasApertados, impactoPorMes };
   }
 
   document.getElementById('btnSimular').addEventListener('click', () => {
@@ -2475,7 +2485,7 @@
     // "seguro" não é só ficar positivo — é manter a reserva mínima configurada intacta.
     // Sem saldo mínimo definido (0), o comportamento continua idêntico ao de antes (só não pode ficar negativo).
     const limiteSeguranca = state.config.saldoMinimo || 0;
-    const { pior: piorSaldo, piorIso } = acharPiorDiaComSimulacaoFixo(data, simTipo, valor, recorrente, qtd);
+    const { pior: piorSaldo, piorIso, diasApertados, impactoPorMes } = acharPiorDiaComSimulacaoFixo(data, simTipo, valor, recorrente, qtd, limiteSeguranca);
     if(folegoResultados.length === 0){
       resumo.className = 'sim-veredito';
       resumo.innerHTML = 'Ainda não consegui achar seu salário cadastrado pra calcular se isso cabe no orçamento.';
@@ -2492,6 +2502,53 @@
         : '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeDia+' seu saldo fica abaixo da reserva mínima de '+fmt(limiteSeguranca)+' (sobra só <span class="valor">'+fmt(piorSaldo)+'</span>) por causa dessa decisão.';
     }
     document.getElementById('simAvisoMesTotal').style.display = 'none'; // o veredito principal (dia a dia) já cobre isso agora
+
+    // quando não dá pra pagar, mostra exatamente os dias apertados em vez do gráfico geral (mais direto
+    // que um gráfico de saldo projetado, que mistura tudo e não aponta onde exatamente é o problema)
+    const trechoBox = document.getElementById('simTrechoApertadoBox');
+    const chartBox = document.getElementById('simChartBox');
+    if(piorSaldo < limiteSeguranca && diasApertados.length > 0){
+      trechoBox.style.display = 'block';
+      chartBox.style.display = 'none';
+
+      // janela de pelo menos 7 dias: da data da decisão até o último dia apertado (ou mais, se precisar completar 7)
+      const ultimoApertado = diasApertados[diasApertados.length-1].iso;
+      let isoFimJanela = ultimoApertado > data ? ultimoApertado : data;
+      const diasNaJanela = (parseISO(isoFimJanela).ano*372 + parseISO(isoFimJanela).mes*31 + parseISO(isoFimJanela).dia)
+        - (parseISO(data).ano*372 + parseISO(data).mes*31 + parseISO(data).dia) + 1;
+      if(diasNaJanela < 7) isoFimJanela = addDiasISO(data, 6);
+
+      const diasReais = saldosDiariosIntervalo(data, isoFimJanela);
+      const hojeISO = todayISO();
+      const setApertados = new Set(diasApertados.map(d => d.iso));
+      const linhas = diasReais.map(d => {
+        const diaSemanaNum = new Date(d.ano, d.mes, d.dia).getDay();
+        const diaSemana = DIAS_SEMANA_ABREV[diaSemanaNum];
+        const impactoDoMes = impactoPorMes[d.ano+'-'+d.mes] || 0;
+        const comDecisao = d.saldo + impactoDoMes;
+        const classesExtra = [];
+        if(d.iso === hojeISO) classesExtra.push('extrato-linha-hoje');
+        if(diaSemanaNum === 0 || diaSemanaNum === 6) classesExtra.push('extrato-linha-fimdesemana');
+        if(setApertados.has(d.iso)) classesExtra.push('extrato-linha-folego');
+        const temDiarioDefinido = d.diario > 0 || state.movimentacoes.some(mv => mv.tipo==='diario' && mv.data===d.iso && !mv.recorrenteDiario);
+        return '<tr class="'+classesExtra.join(' ')+'">'+
+          '<td class="extrato-col-dia">'+String(d.dia).padStart(2,'0')+'/'+String(d.mes+1).padStart(2,'0')+'/'+String(d.ano).slice(-2)+'<small>'+diaSemana+'</small></td>'+
+          '<td class="extrato-col-num'+(d.entradas>0 ? ' extrato-entrada' : '')+'">'+(d.entradas>0 ? fmtNum(d.entradas) : '')+'</td>'+
+          '<td class="extrato-col-num'+(d.saidas>0 ? ' extrato-saida' : '')+'">'+(d.saidas>0 ? fmtNum(d.saidas) : '')+'</td>'+
+          '<td class="extrato-col-num extrato-diario'+(d.diario>0 ? ' extrato-diario-com-valor' : '')+'">'+(temDiarioDefinido ? fmtNum(d.diario) : '<span class="extrato-zerar">def.</span>')+'</td>'+
+          '<td class="extrato-col-num extrato-saldo'+(comDecisao<0?' neg':'')+'">'+fmtNum(comDecisao)+'</td>'+
+        '</tr>';
+      }).join('');
+      document.getElementById('simTrechoApertadoLista').innerHTML =
+        '<div class="extrato-tabela-wrap"><table class="extrato-tabela">'+
+          '<thead><tr><th></th><th>Entr.</th><th>Saída</th><th>Diário</th><th>Saldo com a decisão</th></tr></thead>'+
+          '<tbody>'+linhas+'</tbody>'+
+        '</table></div>'+
+        '<p class="extrato-legenda">valores em R$ &nbsp;·&nbsp; <span class="extrato-legenda-dot folego"></span> fica abaixo do seguro &nbsp; <span class="extrato-legenda-dot neg"></span> saldo negativo</p>';
+    }else{
+      trechoBox.style.display = 'none';
+      chartBox.style.display = 'block';
+    }
 
     const folegoBox = document.getElementById('simFolegoBox');
     if(folegoResultados.length === 0){
