@@ -859,7 +859,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.28.0</p>
+      <p class="versao-app">Versão 1.28.2</p>
     </div>
   </section>
 
@@ -2413,11 +2413,22 @@
         ? '✅ <b>Sim, dá pra pagar</b>. Seu saldo continua acima da reserva mínima ('+fmt(limiteSeguranca)+') em todos os dias, mesmo com essa decisão.'
         : '✅ <b>Sim, dá pra pagar</b>. Seu saldo continua positivo em todos os dias, mesmo com essa decisão.';
     }else{
-      const nomeDia = formatBR(piorIso);
+      // usa o PRIMEIRO dia que aperta (cronologicamente), não o pior — é o que vai te pegar de surpresa
+      // primeiro. O pior dia pode vir bem depois, e nesse caso não é a informação mais útil de abrir com
+      const primeiro = diasApertados[0];
+      const nomeDia = formatBR(primeiro.iso);
       resumo.className = 'sim-veredito neg';
-      resumo.innerHTML = piorSaldo < 0
-        ? '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeDia+' seu saldo fica negativo (<span class="valor">'+fmt(Math.abs(piorSaldo))+'</span> no vermelho) por causa dessa decisão.'
-        : '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeDia+' seu saldo fica abaixo da reserva mínima de '+fmt(limiteSeguranca)+' (sobra só <span class="valor">'+fmt(piorSaldo)+'</span>) por causa dessa decisão.';
+      // conta quantos "trechos" separados (não-consecutivos) ficam apertados — se for mais de um, o
+      // primeiro dia sozinho não conta a história toda, tem outro(s) momento(s) depois dele
+      let trechos = diasApertados.length > 0 ? 1 : 0;
+      for(let i=1; i<diasApertados.length; i++){
+        if(addDiasISO(diasApertados[i-1].iso, 1) !== diasApertados[i].iso) trechos++;
+      }
+      const avisoOutrosTrechos = trechos > 1 ? ' Esse não é o único momento apertado — olha a tabela abaixo pra ver os outros.' : '';
+      resumo.innerHTML = (primeiro.comDecisao < 0
+        ? '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeDia+' seu saldo já fica negativo (<span class="valor">'+fmt(Math.abs(primeiro.comDecisao))+'</span> no vermelho) por causa dessa decisão.'
+        : '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeDia+' seu saldo já fica abaixo da reserva mínima de '+fmt(limiteSeguranca)+' (sobra só <span class="valor">'+fmt(primeiro.comDecisao)+'</span>) por causa dessa decisão.'
+      ) + avisoOutrosTrechos;
     }
     document.getElementById('simAvisoMesTotal').style.display = 'none'; // o veredito principal (dia a dia) já cobre isso agora
 
