@@ -534,6 +534,8 @@
 
     <div class="performance-banner" id="performanceBanner"></div>
 
+    <button class="btn-simular-destaque" id="btnAtalhoSimular">🔮 Testar uma decisão antes de gastar</button>
+
     <div class="ajuste-box" id="ajusteBox">
       <p class="ajuste-titulo">Média dos últimos meses reais</p>
       <div class="ajuste-linhas">
@@ -547,8 +549,6 @@
       <p class="ajuste-titulo" id="folegoTitulo">Fôlego até o próximo recebimento</p>
       <div class="ajuste-resultado" id="folegoResultado"></div>
     </div>
-
-    <button class="btn-simular-destaque" id="btnAtalhoSimular">🔮 Testar uma decisão antes de gastar</button>
 
     <div class="orcamento-box" id="orcamentoBox">
       <div class="orcamento-top"><span>Orçamento do mês</span><span id="orcamentoTexto">R$ 0,00 / R$ 0,00</span></div>
@@ -859,7 +859,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.28.2</p>
+      <p class="versao-app">Versão 1.28.4</p>
     </div>
   </section>
 
@@ -1568,7 +1568,7 @@
         if(variacao >= 10) alerts.push({tipo:'atencao', texto:'Seus gastos este mês estão '+variacao.toFixed(0)+'% maiores que no mês passado'+trechoComparado+'.'});
       }
       if(atualComparacao.economia > anterior.economia && atualComparacao.economia > 0){
-        alerts.push({tipo:'positivo', texto:'Você economizou mais este mês do que no mês anterior'+(ehMesAtualDeVerdade ? ' (até agora)' : '')+'.'});
+        alerts.push({tipo:'positivo', texto:'Você economizou mais este mês do que no mês anterior.'});
       }
     }
     if(state.config.orcamentoMensal > 0){
