@@ -399,6 +399,7 @@
   .nav-menu-btn .ico{font-size:15px;flex:0 0 auto;}
   .nav-menu-btn-primario{background:var(--gradient-primary);border:none;color:#fff;box-shadow:0 6px 16px rgba(34,227,178,.25);}
   .nav-menu-btn-diario{background:var(--gold);border:none;color:var(--bg);box-shadow:0 6px 16px rgba(255,180,73,.3);}
+  .btn-diario-destaque{background:var(--gold) !important;color:var(--bg) !important;box-shadow:0 6px 16px rgba(255,180,73,.3);}
   .topbar-titulo{display:flex;align-items:center;gap:10px;}
   .btn-menu-topo{flex:0 0 auto;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--surface-alt);border:1px solid var(--line);border-radius:11px;font-size:18px;cursor:pointer;}
 
@@ -875,7 +876,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.21.1</p>
+      <p class="versao-app">Versão 1.22.0</p>
     </div>
   </section>
 
@@ -994,7 +995,7 @@
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Cada lançamento fica guardado como um item. Nada é sobrescrito. Isso muda só esse dia; os outros continuam com o valor padrão.</p>
       <div class="modal-acoes">
         <button class="btn-secundario" id="btnDiaDiarioRemover" style="display:none;">Limpar tudo (voltar ao padrão)</button>
-        <button class="btn-primario" id="btnDiaDiarioSalvar">Adicionar</button>
+        <button class="btn-primario btn-diario-destaque" id="btnDiaDiarioSalvar">Adicionar</button>
       </div>
     </div>
   </div>
@@ -2377,6 +2378,42 @@
     return resultados;
   }
 
+  // varre TODO dia (não só a véspera do salário) de cada mês afetado, aplicando o impacto FIXO daquele mês
+  // (mesma regra de "não acumular parcelas anteriores" do calcularFolegoComSimulacao) — acha o dia mais
+  // apertado de verdade, mesmo quando uma conta vence no meio do mês, longe do checkpoint mensal
+  function acharPiorDiaComSimulacaoFixo(dataSim, tipoSim, valorCents, recorrenteSim, qtdSim){
+    const hoje = new Date();
+    const [ay,am] = dataSim.split('-').map(Number);
+    const simAno = ay, simMes = am-1;
+    const sinal = tipoSim==='entrada' ? 1 : -1;
+    let pior = Infinity, piorIso = null;
+    let parcelasUsadas = 0;
+    for(let i=0; i<12; i++){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+      const ano = d.getFullYear(), mes = d.getMonth();
+      garantirRecorrencias(ano, mes);
+      const diferencaMeses = (ano-simAno)*12 + (mes-simMes);
+      if(diferencaMeses < 0) continue;
+
+      let ocorrencias = 1;
+      if(recorrenteSim && qtdSim && ocorrencias === 1){
+        if(parcelasUsadas >= qtdSim) ocorrencias = 0;
+        else parcelasUsadas++;
+      }
+      const impactoDoMes = sinal * ocorrencias * valorCents;
+
+      const dias = saldosDiariosDoMes(ano, mes);
+      dias.forEach(dObj => {
+        if(dObj.iso < dataSim) return; // antes da decisão acontecer, o impacto ainda não existe
+        const comImpacto = dObj.saldo + impactoDoMes;
+        if(comImpacto < pior){ pior = comImpacto; piorIso = dObj.iso; }
+      });
+
+      if(recorrenteSim && qtdSim && parcelasUsadas >= qtdSim && ocorrencias === 0 && diferencaMeses > 0) break;
+    }
+    return { pior, piorIso };
+  }
+
   document.getElementById('btnSimular').addEventListener('click', () => {
     const valor = centsFromInput(document.getElementById('simValor'));
     if(valor <= 0){ mostrarToast('Informe um valor válido'); return; }
@@ -2393,37 +2430,23 @@
     // "seguro" não é só ficar positivo — é manter a reserva mínima configurada intacta.
     // Sem saldo mínimo definido (0), o comportamento continua idêntico ao de antes (só não pode ficar negativo).
     const limiteSeguranca = state.config.saldoMinimo || 0;
-    const mesesQueApertam = folegoResultados.filter(r => r.simulado < limiteSeguranca);
+    const { pior: piorSaldo, piorIso } = acharPiorDiaComSimulacaoFixo(data, simTipo, valor, recorrente, qtd);
     if(folegoResultados.length === 0){
       resumo.className = 'sim-veredito';
       resumo.innerHTML = 'Ainda não consegui achar seu salário cadastrado pra calcular se isso cabe no orçamento.';
-    }else if(mesesQueApertam.length === 0){
+    }else if(piorSaldo >= limiteSeguranca){
       resumo.className = 'sim-veredito pos';
       resumo.innerHTML = limiteSeguranca > 0
-        ? '✅ <b>Sim, dá pra pagar</b>. Seu saldo continua acima da reserva mínima ('+fmt(limiteSeguranca)+') em todos os meses até o salário, mesmo com essa decisão.'
-        : '✅ <b>Sim, dá pra pagar</b>. Seu saldo continua positivo em todos os meses até o salário, mesmo com essa decisão.';
+        ? '✅ <b>Sim, dá pra pagar</b>. Seu saldo continua acima da reserva mínima ('+fmt(limiteSeguranca)+') em todos os dias, mesmo com essa decisão.'
+        : '✅ <b>Sim, dá pra pagar</b>. Seu saldo continua positivo em todos os dias, mesmo com essa decisão.';
     }else{
-      const primeiro = mesesQueApertam[0];
-      const nomeMes = MESES[primeiro.mes]+'/'+primeiro.ano;
+      const nomeDia = formatBR(piorIso);
       resumo.className = 'sim-veredito neg';
-      resumo.innerHTML = primeiro.simulado < 0
-        ? '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeMes+' seu saldo fica negativo (<span class="valor">'+fmt(Math.abs(primeiro.simulado))+'</span> no vermelho) por causa dessa decisão.'
-        : '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeMes+' seu saldo fica abaixo da reserva mínima de '+fmt(limiteSeguranca)+' (sobra só <span class="valor">'+fmt(primeiro.simulado)+'</span>) por causa dessa decisão.';
+      resumo.innerHTML = piorSaldo < 0
+        ? '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeDia+' seu saldo fica negativo (<span class="valor">'+fmt(Math.abs(piorSaldo))+'</span> no vermelho) por causa dessa decisão.'
+        : '⚠️ <b>Não, isso vai apertar</b>. Em '+nomeDia+' seu saldo fica abaixo da reserva mínima de '+fmt(limiteSeguranca)+' (sobra só <span class="valor">'+fmt(piorSaldo)+'</span>) por causa dessa decisão.';
     }
-
-    // segundo aviso: o Fôlego só olha até a véspera do salário — se tiver uma conta vencendo DEPOIS
-    // disso, dentro do mesmo mês, o Fôlego não pegaria. Aqui a gente cruza com o saldo acumulado do
-    // mês inteiro, pra avisar mesmo quando o Fôlego daquele mês deu positivo.
-    const mesesFolegoOk = new Set(folegoResultados.filter(r => r.simulado >= limiteSeguranca).map(r => r.ano+'-'+r.mes));
-    const riscoDepoisDoFolego = resultados.find(r => r.simulado < 0 && mesesFolegoOk.has(r.ano+'-'+r.mes));
-    const avisoExtra = document.getElementById('simAvisoMesTotal');
-    if(riscoDepoisDoFolego){
-      const nomeMes2 = MESES[riscoDepoisDoFolego.mes]+'/'+riscoDepoisDoFolego.ano;
-      avisoExtra.innerHTML = '⚠️ Mesmo com o Fôlego de '+nomeMes2+' dando positivo, o mês inteiro fecha no vermelho (<span class="valor">'+fmt(Math.abs(riscoDepoisDoFolego.simulado))+'</span>). Deve ter uma conta vencendo depois do salário.';
-      avisoExtra.style.display = 'block';
-    }else{
-      avisoExtra.style.display = 'none';
-    }
+    document.getElementById('simAvisoMesTotal').style.display = 'none'; // o veredito principal (dia a dia) já cobre isso agora
 
     const folegoBox = document.getElementById('simFolegoBox');
     if(folegoResultados.length === 0){
