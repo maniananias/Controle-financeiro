@@ -262,8 +262,9 @@
   .extrato-range-tabs::-webkit-scrollbar{display:none;}
   .extrato-range-btn{flex:0 0 auto;padding:7px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:color .15s,border-color .15s;}
   .extrato-range-btn.active{background:var(--primary);color:var(--bg);font-weight:700;border-color:transparent;box-shadow:0 4px 14px rgba(34,227,178,.22);}
-  .extrato-range-tabs-passado{margin-top:-6px;}
-  .extrato-range-label{flex:0 0 auto;font-size:11px;color:var(--ink-soft);opacity:.65;align-self:center;padding-right:2px;}
+  .extrato-direcao-toggle{display:flex;gap:8px;margin-bottom:10px;}
+  .extrato-direcao-btn{flex:1;padding:9px;border-radius:11px;border:2px solid var(--line);background:var(--surface);font-weight:600;font-size:12.5px;color:var(--ink-soft);cursor:pointer;transition:.15s;font-family:inherit;}
+  .extrato-direcao-btn.active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);}
   .extrato-dia{background:var(--surface);border-radius:12px;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(255,255,255,.07);}
   .extrato-dia-hoje{border-color:rgba(124,140,255,.5);}
   .extrato-dia-vazio{opacity:.55;}
@@ -589,17 +590,15 @@
     </div>
 
     <div class="rel-view active" id="rel-extrato">
-      <div class="extrato-range-tabs">
-        <button class="extrato-range-btn active" data-range="30" type="button">30 dias</button>
-        <button class="extrato-range-btn" data-range="60" type="button">60 dias</button>
-        <button class="extrato-range-btn" data-range="90" type="button">90 dias</button>
-        <button class="extrato-range-btn" data-range="120" type="button">120 dias</button>
+      <div class="extrato-direcao-toggle">
+        <button class="extrato-direcao-btn active" data-direcao="proximos" type="button">Próximos</button>
+        <button class="extrato-direcao-btn" data-direcao="anteriores" type="button">Anteriores</button>
       </div>
-      <div class="extrato-range-tabs extrato-range-tabs-passado">
-        <span class="extrato-range-label">Anteriores:</span>
-        <button class="extrato-range-btn" data-range="-30" type="button">30 dias</button>
-        <button class="extrato-range-btn" data-range="-60" type="button">60 dias</button>
-        <button class="extrato-range-btn" data-range="-90" type="button">90 dias</button>
+      <div class="extrato-range-tabs">
+        <button class="extrato-range-btn active" data-dias="30" type="button">30 dias</button>
+        <button class="extrato-range-btn" data-dias="60" type="button">60 dias</button>
+        <button class="extrato-range-btn" data-dias="90" type="button">90 dias</button>
+        <button class="extrato-range-btn" data-dias="120" type="button">120 dias</button>
       </div>
       <div id="tabelaExtrato"></div>
     </div>
@@ -860,7 +859,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.26.0</p>
+      <p class="versao-app">Versão 1.28.0</p>
     </div>
   </section>
 
@@ -1500,6 +1499,18 @@
     return { entradas, saidas, diario, saidaTotal, economia, performance: economia, pct,
       saldoInicial: saldoInicialDoMes(ano,mes), saldoFinal: saldoFinalDoMes(ano,mes) };
   }
+  // soma só até um dia específico do mês (não o mês inteiro projetado) — usado pra comparar o mês em
+  // andamento de forma justa, já que "totaisDoMes" inclui até lançamentos recorrentes futuros daquele mês
+  function totaisAteODia(ano,mes,diaLimite){
+    const dias = saldosDiariosDoMes(ano,mes).slice(0, Math.min(diaLimite, daysInMonth(ano,mes)));
+    const entradas = dias.reduce((a,d)=>a+d.entradas,0);
+    const saidas = dias.reduce((a,d)=>a+d.saidas,0);
+    const diario = dias.reduce((a,d)=>a+d.diario,0);
+    const saidaTotal = saidas + diario;
+    const economia = entradas - saidaTotal;
+    const pct = entradas > 0 ? (economia/entradas*100) : 0;
+    return { entradas, saidas, diario, saidaTotal, economia, performance: economia, pct };
+  }
 
   // saldo real "de hoje": soma tudo até a data de hoje, ignorando lançamentos futuros dentro do mesmo mês
   function saldoAteHoje(){
@@ -1539,18 +1550,25 @@
   }
 
   function gerarAlertas(ano,mes){
-    const atual = totaisDoMes(ano,mes);
+    const hoje = new Date();
+    const ehMesAtualDeVerdade = (ano === hoje.getFullYear() && mes === hoje.getMonth());
+    const atual = totaisDoMes(ano,mes); // projeção do mês inteiro — usada no orçamento e saldo mínimo (aviso antecipado faz sentido aqui)
+    // só pra comparar com o mês passado, "totaisDoMes" incluiria recorrências futuras que ainda não
+    // aconteceram nesse mês — seria injusto comparar isso com um mês passado que já é completo/real.
+    // por isso, nesse caso específico, comparamos só até o mesmo dia dos dois meses.
+    const atualComparacao = ehMesAtualDeVerdade ? totaisAteODia(ano, mes, hoje.getDate()) : atual;
     const [pa,pm] = mes===0 ? [ano-1,11] : [ano,mes-1];
     let alerts = [];
     if(pa === state.config.anoInicial - 1) { /* sem histórico anterior */ }
     else{
-      const anterior = totaisDoMes(pa,pm);
+      const anterior = ehMesAtualDeVerdade ? totaisAteODia(pa, pm, hoje.getDate()) : totaisDoMes(pa,pm);
       if(anterior.saidaTotal > 0){
-        const variacao = ((atual.saidaTotal - anterior.saidaTotal)/anterior.saidaTotal)*100;
-        if(variacao >= 10) alerts.push({tipo:'atencao', texto:'Seus gastos este mês estão '+variacao.toFixed(0)+'% maiores que no mês passado.'});
+        const variacao = ((atualComparacao.saidaTotal - anterior.saidaTotal)/anterior.saidaTotal)*100;
+        const trechoComparado = ehMesAtualDeVerdade ? ' (até o dia '+hoje.getDate()+' de cada mês)' : '';
+        if(variacao >= 10) alerts.push({tipo:'atencao', texto:'Seus gastos este mês estão '+variacao.toFixed(0)+'% maiores que no mês passado'+trechoComparado+'.'});
       }
-      if(atual.economia > anterior.economia && atual.economia > 0){
-        alerts.push({tipo:'positivo', texto:'Você economizou mais este mês do que no mês anterior.'});
+      if(atualComparacao.economia > anterior.economia && atualComparacao.economia > 0){
+        alerts.push({tipo:'positivo', texto:'Você economizou mais este mês do que no mês anterior'+(ehMesAtualDeVerdade ? ' (até agora)' : '')+'.'});
       }
     }
     if(state.config.orcamentoMensal > 0){
@@ -2542,6 +2560,10 @@
     document.getElementById('btnHoje').style.display = estaEmHoje ? 'none' : 'inline-block';
 
     const t = totaisDoMes(filtro.ano, filtro.mes);
+    const ehMesAtualDeVerdade = (filtro.ano === hoje.getFullYear() && filtro.mes === hoje.getMonth());
+    // no mês em andamento, "t" inclui recorrências futuras que ainda não aconteceram — pra essas duas
+    // informações específicas (percentual de economia e o banner), usamos só o que já rolou até hoje
+    const tParaBanner = ehMesAtualDeVerdade ? totaisAteODia(filtro.ano, filtro.mes, hoje.getDate()) : t;
     document.getElementById('cardSaldo').textContent = fmt(saldoAteHoje());
     document.getElementById('cardSaldoData').textContent = '(hoje, ' + formatBR(todayISO()) + ')';
     document.getElementById('cardEntradas').textContent = fmt(t.entradas);
@@ -2550,12 +2572,12 @@
     const economiaEl = document.getElementById('cardEconomia');
     economiaEl.textContent = fmt(t.economia);
     economiaEl.className = 'card-valor ' + (t.economia>=0?'pos':'neg');
-    document.getElementById('cardPctEconomia').textContent = t.pct.toFixed(0)+'%';
+    document.getElementById('cardPctEconomia').textContent = tParaBanner.pct.toFixed(0)+'%'+(ehMesAtualDeVerdade ? ' (até agora)' : '');
 
     const banner = document.getElementById('performanceBanner');
-    if(t.performance >= 0){
+    if(tParaBanner.performance >= 0){
       banner.className = 'performance-banner pos';
-      banner.textContent = '✓ Você terminou o período no positivo.';
+      banner.textContent = ehMesAtualDeVerdade ? '✓ Até agora, você está no positivo neste mês.' : '✓ Você terminou o período no positivo.';
     }else{
       banner.className = 'performance-banner neg';
       banner.textContent = '⚠ Atenção: seus gastos superaram suas entradas.';
@@ -2967,22 +2989,30 @@
     return set;
   }
 
-  let extratoRangeAtivo = '30';
+  let extratoDirecao = 'proximos';
+  let extratoDias = 30;
+  function extratoRangeAtivo(){ return extratoDirecao === 'proximos' ? String(extratoDias) : String(-extratoDias); }
+  document.querySelectorAll('.extrato-direcao-btn').forEach(btn => btn.addEventListener('click', () => {
+    extratoDirecao = btn.dataset.direcao;
+    document.querySelectorAll('.extrato-direcao-btn').forEach(b => b.classList.toggle('active', b===btn));
+    renderExtrato();
+  }));
   document.querySelectorAll('.extrato-range-btn').forEach(btn => btn.addEventListener('click', () => {
-    extratoRangeAtivo = btn.dataset.range;
+    extratoDias = Number(btn.dataset.dias);
     document.querySelectorAll('.extrato-range-btn').forEach(b => b.classList.toggle('active', b===btn));
     renderExtrato();
   }));
 
   function renderExtrato(){
     const hojeISO = todayISO();
+    const rangeAtivo = extratoRangeAtivo();
     let isoInicio = hojeISO, isoFim;
-    if(String(extratoRangeAtivo).startsWith('-')){
+    if(rangeAtivo.startsWith('-')){
       // período anterior a hoje: ex. "-30" = últimos 30 dias antes de hoje (sem incluir hoje, que já aparece nas outras abas)
       isoFim = addDiasISO(hojeISO, -1);
-      isoInicio = addDiasISO(hojeISO, Number(extratoRangeAtivo));
+      isoInicio = addDiasISO(hojeISO, Number(rangeAtivo));
     }else{
-      isoFim = addDiasISO(hojeISO, Number(extratoRangeAtivo));
+      isoFim = addDiasISO(hojeISO, Number(rangeAtivo));
     }
     const dias = saldosDiariosIntervalo(isoInicio, isoFim);
     const diasFolego = diasFolegoNoIntervalo(isoInicio, isoFim);
