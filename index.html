@@ -136,7 +136,9 @@
   .diario-item-linha:last-child{border-bottom:none;}
   .diario-item-info{display:flex;align-items:baseline;gap:8px;}
   .diario-item-desc{font-size:12.5px;color:var(--ink-soft);}
-  .diario-item-remover{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:0 6px;line-height:1;}
+  .diario-item-remover{background:none;border:none;color:var(--danger);font-size:14px;cursor:pointer;padding:4px 6px;line-height:1;opacity:.75;}
+  .diario-lista-cabecalho{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .btn-limpar-tudo-link{background:none;border:none;color:var(--danger);font-size:11.5px;font-weight:600;text-decoration:underline;cursor:pointer;padding:2px 0;font-family:inherit;opacity:.85;}
   .ajuste-linhas div{flex:1;background:var(--surface-alt);border-radius:10px;padding:8px 10px;}
   .ajuste-linhas span{display:block;font-size:10.5px;color:var(--ink-faint);margin-bottom:2px;}
   .ajuste-linhas b{display:block;font-size:14px;font-weight:600;}
@@ -427,6 +429,7 @@
   }
   .modal-handle{width:36px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 14px;}
   .modal-title{font-size:16px;margin-bottom:14px;}
+  .mov-origem-simulacao{background:var(--gold-soft);border:1px solid rgba(255,180,73,.35);color:var(--gold);font-size:12px;font-weight:600;padding:10px 12px;border-radius:10px;margin:-6px 0 14px;line-height:1.5;}
   .tipo-toggle{display:flex;gap:8px;margin-bottom:14px;}
   .tipo-toggle button{flex:1;padding:11px;border-radius:11px;border:2px solid var(--line);background:var(--surface);font-weight:600;font-size:13.5px;color:var(--ink-soft);cursor:pointer;transition:.15s;}
   .tipo-toggle button.active-entrada{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);}
@@ -859,7 +862,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.28.4</p>
+      <p class="versao-app">Versão 1.29.3</p>
     </div>
   </section>
 
@@ -914,6 +917,7 @@
       <div class="modal-handle"></div>
       <button class="modal-close" data-close-modal type="button">✕</button>
       <h2 class="modal-title" id="modalMovTitulo">Nova movimentação</h2>
+      <div class="mov-origem-simulacao" id="movOrigemSimulacao" style="display:none;">🔮 Veio da sua simulação. Confira os dados e toque em Salvar pra lançar de verdade.</div>
       <input type="hidden" id="movId">
       <div class="tipo-toggle">
         <button type="button" id="btnTipoEntrada">↑ Entrada</button>
@@ -962,8 +966,11 @@
       <h2 class="modal-title" id="diaDiarioTitulo">Diário do dia</h2>
       <input type="hidden" id="diaDiarioIso">
 
-      <div id="diaDiarioListaBox" style="display:none;margin-bottom:16px;">
-        <p class="ajuste-titulo">O que já foi lançado hoje</p>
+      <div id="diaDiarioListaBox" style="display:none;margin-bottom:18px;">
+        <div class="diario-lista-cabecalho">
+          <p class="ajuste-titulo" style="margin-bottom:0;">O que já foi lançado hoje</p>
+          <button type="button" class="btn-limpar-tudo-link" id="btnDiaDiarioRemover" style="display:none;">Limpar tudo</button>
+        </div>
         <div id="diaDiarioLista"></div>
         <div class="ajuste-resultado pos" id="diaDiarioTotalLinha" style="margin-top:8px;"></div>
       </div>
@@ -977,8 +984,7 @@
       <div class="field"><label>Descrição (opcional)</label><input type="text" id="diaDiarioDescricao" placeholder="Ex: café, uber, farmácia..."></div>
       <p style="font-size:12px;color:var(--ink-soft);margin:-6px 0 16px;">Cada lançamento fica guardado como um item. Nada é sobrescrito. Isso muda só esse dia; os outros continuam com o valor padrão.</p>
       <div class="modal-acoes">
-        <button class="btn-secundario" id="btnDiaDiarioRemover" style="display:none;">Limpar tudo (voltar ao padrão)</button>
-        <button class="btn-primario btn-diario-destaque" id="btnDiaDiarioSalvar">Adicionar</button>
+        <button class="btn-primario btn-diario-destaque" id="btnDiaDiarioSalvar" style="flex:1;">Adicionar</button>
       </div>
     </div>
   </div>
@@ -2542,6 +2548,7 @@
   document.getElementById('btnLancarSim').addEventListener('click', () => {
     if(!ultimaSimulacao) return;
     abrirModalMov(null);
+    document.getElementById('movOrigemSimulacao').style.display = 'block';
     setTipoModal(ultimaSimulacao.tipo, false);
     document.getElementById('movData').value = ultimaSimulacao.data; atualizarDicaData('movData');
     setMoneyValue(document.getElementById('movValor'), ultimaSimulacao.valor);
@@ -2549,7 +2556,6 @@
     document.getElementById('movRecorrente').checked = ultimaSimulacao.recorrente;
     document.getElementById('campoRecorrenteAte').style.display = ultimaSimulacao.recorrente ? 'block' : 'none';
     if(ultimaSimulacao.qtd) document.getElementById('movRecorrenteQtd').value = ultimaSimulacao.qtd;
-    mostrarToast('Confirme os dados e toque em Salvar');
   });
 
   function renderDashboard(){
@@ -2774,6 +2780,7 @@
     popularSelectsMov();
     const editando = !!id;
     document.getElementById('modalMovTitulo').textContent = editando ? 'Editar movimentação' : 'Nova movimentação';
+    document.getElementById('movOrigemSimulacao').style.display = 'none';
     document.getElementById('btnExcluirMov').style.display = editando ? 'block' : 'none';
     document.getElementById('movAplicarTodas').checked = false;
     if(editando){
@@ -3103,7 +3110,7 @@
     document.getElementById('diaDiarioLista').innerHTML = itens.map(m => {
       const desc = (m.descricao && m.descricao !== 'Ajuste manual do dia') ? m.descricao : 'Gasto';
       return '<div class="diario-item-linha"><div class="diario-item-info"><span class="diario-item-desc">'+desc+'</span><b class="mono neg">'+fmt(m.valor)+'</b></div>'+
-        '<button type="button" class="diario-item-remover" data-item-id="'+m.id+'">✕</button></div>';
+        '<button type="button" class="diario-item-remover" data-item-id="'+m.id+'" title="Remover esse item">🗑️</button></div>';
     }).join('');
     document.getElementById('diaDiarioTotalLinha').innerHTML = 'Total do dia: <span class="valor">'+fmt(total)+'</span>';
     document.querySelectorAll('.diario-item-remover').forEach(btn => btn.addEventListener('click', async () => {
@@ -3121,18 +3128,16 @@
   function abrirEditorDiarioDia(iso){
     const [y,m,d] = iso.split('-').map(Number);
     const tituloEl = document.getElementById('diaDiarioTitulo');
-    if(iso === todayISO()){
-      tituloEl.style.display = 'none';
-    }else{
-      tituloEl.style.display = 'block';
-      tituloEl.textContent = 'Diário de ' + String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+y;
-    }
+    tituloEl.textContent = iso === todayISO() ? 'Diário de hoje' : 'Diário de ' + String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+y;
     document.getElementById('diaDiarioIso').value = iso;
-    document.getElementById('diaDiarioValor').value = '';
+    const jaTemItem = state.movimentacoes.some(mv => mv.tipo==='diario' && mv.data===iso && !mv.recorrenteDiario);
+    // se ainda não tem nenhum item lançado nesse dia, pré-preenche com o valor padrão atual (não muda
+    // o total se a pessoa só confirmar sem mexer — só passa a ser um item explícito em vez do padrão implícito)
+    setMoneyValue(document.getElementById('diaDiarioValor'), jaTemItem ? 0 : diarioValorParaDia(iso));
     document.getElementById('diaDiarioDescricao').value = '';
     renderDiaDiarioLista(iso);
     document.getElementById('modalDiarioDia').classList.add('show');
-    setTimeout(() => document.getElementById('diaDiarioValor').focus(), 50);
+    setTimeout(() => { const el = document.getElementById('diaDiarioValor'); el.focus(); el.select(); }, 50);
   }
   document.getElementById('btnDiaDiarioSalvar').addEventListener('click', async () => {
     const iso = document.getElementById('diaDiarioIso').value;
@@ -3467,8 +3472,15 @@
     }
   });
   document.getElementById('cfgDiaRecebimento').addEventListener('change', e => {
-    const v = Math.max(1, Math.min(31, Number(e.target.value) || 0));
-    if(v > 0 && v !== configAoAbrirTela.diaRecebimento){
+    const raw = e.target.value;
+    const num = Number(raw);
+    // entrada vazia, não numérica ou inválida — rejeita sem salvar nem logar, só reflete o valor real de volta
+    if(!raw || isNaN(num) || num <= 0){
+      e.target.value = state.config.diaRecebimento || '';
+      return;
+    }
+    const v = Math.max(1, Math.min(31, num));
+    if(v !== configAoAbrirTela.diaRecebimento){
       registrarLog('Configurações', 'editado', 'Dia de recebimento', configAoAbrirTela.diaRecebimento||'(vazio)', v,
         { tipo:'config', campo:'diaRecebimento', valorAntes: configAoAbrirTela.diaRecebimento||null });
       configAoAbrirTela.diaRecebimento = v;
@@ -3489,8 +3501,14 @@
       }
       return;
     }
-    const v = Math.max(1, Math.min(31, Number(raw) || 0));
-    state.config.diaRecebimento2 = v > 0 ? v : null;
+    const num = Number(raw);
+    // entrada não numérica ou inválida — rejeita sem salvar nem logar, mantém o valor real de antes
+    if(isNaN(num) || num <= 0){
+      e.target.value = state.config.diaRecebimento2 || '';
+      return;
+    }
+    const v = Math.max(1, Math.min(31, num));
+    state.config.diaRecebimento2 = v;
     if(state.config.diaRecebimento2 !== configAoAbrirTela.diaRecebimento2){
       registrarLog('Configurações', 'editado', '2º dia de recebimento', antes, state.config.diaRecebimento2||'(vazio)',
         { tipo:'config', campo:'diaRecebimento2', valorAntes: antesValor });
