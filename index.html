@@ -22,21 +22,21 @@
 
   :root{
     color-scheme: dark;
-    --bg:#080B12;
-    --surface:#121826;
-    --surface-alt:#1B2333;
+    --bg:#100E1A;
+    --surface:#1B1830;
+    --surface-alt:#241F3C;
     --ink:#EAF1F7;
     --ink-soft:#93A2B8;
     --ink-faint:#5C6B80;
     --line:rgba(255,255,255,.08);
-    --primary:#22E3B2;
+    --primary:#1DD6A3;
     --primary-2:#6C7CFF;
-    --primary-soft:rgba(34,227,178,.14);
+    --primary-soft:rgba(29,214,163,.14);
     --primary-dark:#12B08A;
     --danger:#FF6B85;
     --danger-soft:rgba(255,107,133,.14);
-    --gold:#FFB449;
-    --gold-soft:rgba(255,180,73,.14);
+    --gold:#FF9152;
+    --gold-soft:rgba(255,145,82,.14);
     --radius:18px;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.4);
     --gradient-primary:linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-2) 100%);
@@ -48,10 +48,15 @@
   html::-webkit-scrollbar{display:none;}
   body{scrollbar-width:none;}
   body::-webkit-scrollbar{display:none;}
-  html{overflow-x:hidden;background:var(--bg);}
+  html{overflow-x:hidden;background:var(--bg);overscroll-behavior-y:none;}
   body.modal-aberto{position:fixed;left:0;right:0;overflow:hidden;width:100%;}
+  /* evita que segurar o dedo em cima de um valor dispare o menu nativo de seleção/copiar do iOS —
+     mas libera de novo dentro de campos de verdade, onde selecionar/colar é necessário */
+  body{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+  input, textarea, select{-webkit-touch-callout:default;-webkit-user-select:text;user-select:text;}
   body{
     overflow-x:hidden;
+    overscroll-behavior-y:none;
     position:relative;
     background:var(--bg);
     color:var(--ink);
@@ -85,19 +90,40 @@
 
   /* ---- topo comum ---- */
   .topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px;}
-  .topbar h1{font-size:21px;letter-spacing:-.3px;}
-  .periodo{display:flex;gap:6px;flex-wrap:wrap;width:100%;align-items:center;}
-  .periodo select{
-    font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:var(--ink);
-    background-color:var(--surface);border:1px solid var(--line);border-radius:9px;
-    -webkit-appearance:none;-moz-appearance:none;appearance:none;
-    min-width:50px;text-align:center;
-    padding:6px 22px 6px 10px;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2393A2B8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 8px center;background-size:9px 6px;
+  .topbar h1{font-size:24px;letter-spacing:-.3px;}
+  .periodo{display:flex;gap:4px;flex-wrap:nowrap;align-items:center;position:relative;flex:0 0 auto;}
+  .periodo-navegador{display:flex;align-items:center;gap:0;}
+  .btn-seta-data{
+    width:24px;height:34px;display:flex;align-items:center;justify-content:center;
+    background:none;border:none;
+    color:var(--ink-faint);font-size:19px;font-weight:600;font-family:inherit;cursor:pointer;flex:0 0 auto;
+    padding:0;line-height:1;
   }
-  .btn-hoje{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--primary);background:var(--primary-soft);border:1px solid var(--primary);border-radius:9px;padding:5px 9px;cursor:pointer;}
-  .btn-fechar-tela{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink-soft);background:var(--surface-alt);border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer;flex:none;}
+  .btn-seta-data:active{color:var(--primary);}
+  .periodo-data-texto{
+    height:34px;display:flex;align-items:center;justify-content:center;
+    font-family:'Inter',sans-serif;font-size:19px;font-weight:700;color:var(--ink);
+    background:none;border:none;padding:0 3px;margin:0;cursor:pointer;white-space:nowrap;line-height:1;
+  }
+  .periodo-data-completa{
+    position:absolute;top:calc(100% + 4px);right:0;z-index:20;
+    display:flex;align-items:center;gap:2px;
+    background-color:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:2px 4px;box-shadow:var(--shadow);
+  }
+  .periodo-divisor{color:var(--ink-faint);font-size:13px;font-weight:600;}
+  .periodo-data-completa select{
+    font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:var(--ink);
+    background-color:transparent;border:none;
+    -webkit-appearance:none;-moz-appearance:none;appearance:none;
+    min-width:38px;text-align:center;
+    padding:6px 16px 6px 6px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2393A2B8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 2px center;background-size:9px 6px;
+  }
+  .btn-hoje{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;color:var(--primary);background:var(--primary-soft);border:1px solid var(--primary);border-radius:9px;padding:3px 6px;cursor:pointer;flex:0 0 auto;}
+  .btn-fechar-tela{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink-soft);background:var(--surface-alt);border:1px solid var(--line);border-radius:20px;padding:9px 16px;cursor:pointer;flex:none;transition:background .15s,border-color .15s,color .15s;}
+  .btn-fechar-tela:active{background:rgba(255,107,133,.12);border-color:rgba(255,107,133,.4);color:var(--danger);}
 
   /* ---- cards do dashboard ---- */
   .cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
@@ -120,6 +146,19 @@
   .performance-banner.neg{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(255,107,133,.3);}
 
   .ajuste-box{background:var(--surface);border-radius:var(--radius);padding:14px 15px;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.07);margin-bottom:16px;}
+  /* Fôlego é o conceito mais próprio do app — merece se destacar dos outros cards genéricos,
+     não ser só mais uma caixa igual */
+  #folegoBox{
+    background:linear-gradient(160deg, rgba(255,145,82,.10) 0%, var(--surface) 55%);
+    border:1px solid rgba(255,145,82,.28);
+    position:relative;
+  }
+  #folegoBox::before{
+    content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;
+    background:linear-gradient(180deg, var(--gold) 0%, var(--primary) 100%);
+  }
+  #folegoBox #folegoTitulo{padding-left:10px;}
+  #folegoBox #folegoResultado{padding-left:10px;}
   .ajuste-titulo{font-size:11.5px;color:var(--ink-faint);margin:0 0 10px;}
   .ajuste-linhas{display:flex;gap:10px;margin-bottom:10px;}
   .log-versao{border-bottom:1px solid var(--line);padding:12px 0;}
@@ -220,6 +259,7 @@
   .chart-hint{font-size:10.5px;color:var(--ink-faint);margin:8px 0 0;text-align:center;}
   .dot-projecao{display:inline-block;width:8px;height:2px;background:var(--gold);vertical-align:middle;margin-right:2px;}
   .chart-canvas-wrap{position:relative;height:170px;}
+  .chart-canvas-wrap-categorias{height:280px;}
   .chart-canvas-wrap canvas{width:100%!important;height:100%!important;touch-action:pan-y;}
   .chart-canvas-wrap-grande canvas{touch-action:pan-y;}
 
@@ -408,8 +448,10 @@
   .nav-menu-btn-primario{background:var(--gradient-primary);border:none;color:#fff;box-shadow:0 6px 16px rgba(34,227,178,.25);}
   .nav-menu-btn-diario{background:var(--gold);border:none;color:var(--bg);box-shadow:0 6px 16px rgba(255,180,73,.3);}
   .btn-diario-destaque{background:var(--gold) !important;color:var(--bg) !important;box-shadow:0 6px 16px rgba(255,180,73,.3);}
-  .topbar-titulo{display:flex;align-items:center;gap:10px;}
-  .btn-menu-topo{flex:0 0 auto;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--surface-alt);border:1px solid var(--line);border-radius:11px;font-size:18px;cursor:pointer;}
+  .topbar-titulo{display:flex;align-items:center;gap:5px;min-width:0;flex:1 1 auto;overflow:hidden;}
+  .topbar-titulo h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .btn-menu-topo{flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:none;border:none;font-size:24px;color:var(--ink-soft);cursor:pointer;transition:color .15s;padding:4px;}
+  .btn-menu-topo:active{color:var(--primary);}
 
   .mais-grid{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
   .mais-item{display:flex;align-items:center;gap:12px;padding:15px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--line);color:var(--ink);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;text-align:left;}
@@ -440,7 +482,8 @@
   .btn-primario{flex:1;padding:13px;border-radius:12px;border:none;background:var(--gradient-primary);color:#fff;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 6px 18px rgba(34,227,178,.18);}
   .btn-excluir{padding:13px 16px;border-radius:12px;border:1px solid var(--danger);background:var(--danger-soft);color:var(--danger);font-weight:600;font-size:13.5px;cursor:pointer;}
   .modal-sheet{position:relative;}
-  .modal-close{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;background:var(--surface-alt);border:none;font-size:14px;color:var(--ink-soft);cursor:pointer;}
+  .modal-close{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;background:var(--surface-alt);border:none;font-size:14px;color:var(--ink-soft);cursor:pointer;transition:background .15s,color .15s;}
+  .modal-close:active{background:rgba(255,107,133,.12);color:var(--danger);}
   /* painel do menu de navegação: entra deslizando da esquerda, de onde está o ícone — feito pra parecer parte da própria tela */
   @keyframes slideInDrawer{ from{ transform:translateX(-100%); } to{ transform:translateX(0); } }
   .modal-menu-topo{align-items:stretch;justify-content:flex-start;padding:0;}
@@ -515,9 +558,18 @@
       <div class="topbar-titulo"><button class="btn-menu-topo" type="button"><span class="icone-pagina-atual">☰</span></button><h1>Visão geral</h1></div>
       <div class="periodo">
         <button id="btnHoje" class="btn-hoje" type="button" title="Voltar para hoje">Hoje</button>
-        <select id="dashDia"></select>
-        <select id="dashMes"></select>
-        <select id="dashAno"></select>
+        <div class="periodo-navegador">
+          <button id="btnDiaAnterior" class="btn-seta-data" type="button" aria-label="Dia anterior">‹</button>
+          <button id="btnAbrirDataCompleta" class="periodo-data-texto" type="button"></button>
+          <button id="btnDiaProximo" class="btn-seta-data" type="button" aria-label="Próximo dia">›</button>
+        </div>
+        <div class="periodo-data-completa" id="periodoDataCompleta" style="display:none;">
+          <select id="dashDia"></select>
+          <span class="periodo-divisor">/</span>
+          <select id="dashMes"></select>
+          <span class="periodo-divisor">/</span>
+          <select id="dashAno"></select>
+        </div>
       </div>
     </div>
 
@@ -615,7 +667,7 @@
       <div class="ano-compare-select">
         <select id="catMes"></select><select id="catAno"></select>
       </div>
-      <div class="chart-box"><div class="chart-canvas-wrap"><canvas id="chartCategorias"></canvas></div></div>
+      <div class="chart-box"><div class="chart-canvas-wrap chart-canvas-wrap-categorias"><canvas id="chartCategorias"></canvas></div></div>
     </div>
 
     <div class="export-row">
@@ -862,7 +914,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.29.3</p>
+      <p class="versao-app">Versão 1.35.5</p>
     </div>
   </section>
 
@@ -1149,6 +1201,10 @@
   });
 
   const CATEGORIAS = ['Salário','Férias','13º Salário','Alimentação','Transporte','Moradia','Contas','Lazer','Saúde','Compras','Educação','Outros'];
+  // categorias que fazem sentido em cada tipo de lançamento — Salário/Férias/13º só existem como entrada;
+  // as demais (Alimentação, Transporte etc.) só existem como saída/diário
+  const CATEGORIAS_ENTRADA = ['Salário','Férias','13º Salário','Outros'];
+  const CATEGORIAS_SAIDA = CATEGORIAS.filter(c => !['Salário','13º Salário','Férias'].includes(c));
   const FORMAS = ['Dinheiro','Pix','Débito','Crédito','Transferência','Outros'];
   const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -1741,6 +1797,7 @@
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active','slide-in-right','slide-in-left'));
     const novoEl = document.getElementById('screen-'+tela);
     novoEl.classList.add('active');
+    window.scrollTo(0, 0); // toda troca de tela começa do topo, nunca de onde a tela anterior parou
     if(direcao===1) novoEl.classList.add('slide-in-right');
     else if(direcao===-1) novoEl.classList.add('slide-in-left');
     document.querySelectorAll('.icone-pagina-atual').forEach(el => el.textContent = '☰');
@@ -1948,7 +2005,7 @@
   let ultimaSimulacao = null;
 
   function renderSimulacaoTela(){
-    document.getElementById('simCategoria').innerHTML = CATEGORIAS.map(c=>'<option value="'+c+'">'+(CAT_ICONES[c]||'')+' '+c+'</option>').join('');
+    document.getElementById('simCategoria').innerHTML = CATEGORIAS_SAIDA.map(c=>'<option value="'+c+'">'+(CAT_ICONES[c]||'')+' '+c+'</option>').join('');
     document.getElementById('simData').value = todayISO(); atualizarDicaData('simData');
     document.getElementById('resultadoSimulacao').style.display = 'none';
   }
@@ -2571,10 +2628,12 @@
     }
     dashDia.value = filtro.dia;
     dashMes.value = filtro.mes; dashAno.value = filtro.ano;
+    const anoRealAgora = new Date().getFullYear();
+    document.getElementById('btnAbrirDataCompleta').textContent = String(filtro.dia).padStart(2,'0')+' '+MESES_ABREV[filtro.mes]+(filtro.ano !== anoRealAgora ? ' '+filtro.ano : '');
 
     const hoje = new Date();
     const estaEmHoje = (filtro.ano === hoje.getFullYear() && filtro.mes === hoje.getMonth() && filtro.dia === hoje.getDate());
-    document.getElementById('btnHoje').style.display = estaEmHoje ? 'none' : 'inline-block';
+    document.getElementById('btnHoje').style.visibility = estaEmHoje ? 'hidden' : 'visible';
 
     const t = totaisDoMes(filtro.ano, filtro.mes);
     const ehMesAtualDeVerdade = (filtro.ano === hoje.getFullYear() && filtro.mes === hoje.getMonth());
@@ -2623,6 +2682,20 @@
   document.getElementById('dashDia').addEventListener('change', e => { filtro.dia = Number(e.target.value); renderDashboard(); });
   document.getElementById('dashMes').addEventListener('change', e => { filtro.mes = Number(e.target.value); renderDashboard(); });
   document.getElementById('dashAno').addEventListener('change', e => { filtro.ano = Number(e.target.value); renderDashboard(); });
+  document.getElementById('btnAbrirDataCompleta').addEventListener('click', () => {
+    const el = document.getElementById('periodoDataCompleta');
+    el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+  });
+  function moverDia(delta){
+    const d = new Date(filtro.ano, filtro.mes, filtro.dia);
+    d.setDate(d.getDate()+delta);
+    filtro.ano = d.getFullYear(); filtro.mes = d.getMonth(); filtro.dia = d.getDate();
+    document.getElementById('dashAno').dataset.ready = '';
+    document.getElementById('dashDia').dataset.dias = '';
+    renderDashboard();
+  }
+  document.getElementById('btnDiaAnterior').addEventListener('click', () => moverDia(-1));
+  document.getElementById('btnDiaProximo').addEventListener('click', () => moverDia(1));
   document.getElementById('btnHoje').addEventListener('click', () => {
     filtro.ano = new Date().getFullYear(); filtro.mes = new Date().getMonth(); filtro.dia = new Date().getDate();
     document.getElementById('dashAno').dataset.ready = '';
@@ -2744,8 +2817,16 @@
   // ---- modal movimentação (novo/editar) ----
   let tipoSelecionado = 'saida';
   function popularSelectsMov(){
-    document.getElementById('movCategoria').innerHTML = '<option value="">Selecione a categoria</option>' + CATEGORIAS.map(c=>'<option value="'+c+'">'+(CAT_ICONES[c]||'')+' '+c+'</option>').join('');
     document.getElementById('movForma').innerHTML = FORMAS.map(f=>'<option>'+f+'</option>').join('');
+  }
+  // preenche a categoria com só as opções que fazem sentido pro tipo atual (entrada usa Salário/Férias/13º/Outros;
+  // saída e diário usam as demais) — preserva a seleção atual se ela ainda existir na nova lista
+  function atualizarCategoriasPorTipo(tipo){
+    const catEl = document.getElementById('movCategoria');
+    const valorAtual = catEl.value;
+    const lista = tipo === 'entrada' ? CATEGORIAS_ENTRADA : CATEGORIAS_SAIDA;
+    catEl.innerHTML = '<option value="">Selecione a categoria</option>' + lista.map(c=>'<option value="'+c+'">'+(CAT_ICONES[c]||'')+' '+c+'</option>').join('');
+    if(lista.includes(valorAtual)) catEl.value = valorAtual;
   }
   function setTipoModal(tipo, sugerirCategoria){
     tipoSelecionado = tipo;
@@ -2757,6 +2838,7 @@
     if(tipo==='diario'){
       document.getElementById('campoRecorrenteAte').style.display = 'none';
     }
+    atualizarCategoriasPorTipo(tipo);
     if(sugerirCategoria){
       const catEl = document.getElementById('movCategoria');
       if(!catEl.value) catEl.value = tipo==='entrada' ? 'Salário' : 'Outros';
@@ -3240,7 +3322,12 @@
           const categoria = labels[elements[0].index];
           if(categoria === 'Gasto Diário'){ mostrarToast('Esse valor vem do seu gasto diário automático'); return; }
           irPara('movs');
-          periodoAtivo = 'Tudo';
+          // filtra pelo mesmo mês/ano que estava selecionado no gráfico de Categorias, não por tudo
+          periodoAtivo = 'Personalizado';
+          document.getElementById('filtroMes').value = mes;
+          document.getElementById('filtroAno').value = ano;
+          document.querySelectorAll('#chipsPeriodo .chip').forEach(c => c.classList.toggle('active', c.dataset.p === 'Personalizado'));
+          document.getElementById('filtroMesEspecifico').style.display = 'flex';
           document.getElementById('filtroCategoria').value = categoria;
           document.getElementById('filtroTipo').value = 'saida';
           renderListaMovs();
