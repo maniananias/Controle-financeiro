@@ -92,6 +92,7 @@
   .topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px;}
   .topbar h1{font-size:24px;letter-spacing:-.3px;}
   .periodo{display:flex;gap:4px;flex-wrap:nowrap;align-items:center;position:relative;flex:0 0 auto;}
+  .campo-data-invisivel{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;color-scheme:dark;}
   .periodo-navegador{display:flex;align-items:center;gap:0;}
   .btn-seta-data{
     width:24px;height:34px;display:flex;align-items:center;justify-content:center;
@@ -565,6 +566,7 @@
           <select id="dashMes"></select>
           <select id="dashAno"></select>
         </div>
+        <input type="date" id="dashDataUnica" class="campo-data-invisivel">
       </div>
     </div>
 
@@ -905,7 +907,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.39.1</p>
+      <p class="versao-app">Versão 1.40.0</p>
     </div>
   </section>
 
@@ -2639,6 +2641,7 @@
     }
     dashDia.value = filtro.dia;
     dashMes.value = filtro.mes; dashAno.value = filtro.ano;
+    document.getElementById('dashDataUnica').value = isoDate(filtro.ano, filtro.mes, filtro.dia);
     const anoRealAgora = new Date().getFullYear();
     document.getElementById('btnAbrirDataCompleta').textContent = String(filtro.dia).padStart(2,'0')+' '+MESES_ABREV[filtro.mes]+(filtro.ano !== anoRealAgora ? ' '+filtro.ano : '');
 
@@ -2718,7 +2721,19 @@
     renderCalendarioGrid();
     document.getElementById('modalCalendario').classList.add('show');
   }
-  document.getElementById('btnAbrirDataCompleta').addEventListener('click', abrirModalCalendario);
+  document.getElementById('dashDataUnica').addEventListener('change', e => {
+    if(!e.target.value) return;
+    const [ay,am,ad] = e.target.value.split('-').map(Number);
+    filtro.ano = ay; filtro.mes = am-1; filtro.dia = ad;
+    document.getElementById('dashAno').dataset.ready = '';
+    document.getElementById('dashDia').dataset.dias = '';
+    renderDashboard();
+  });
+  document.getElementById('btnAbrirDataCompleta').addEventListener('click', () => {
+    const input = document.getElementById('dashDataUnica');
+    if(input.showPicker){ try{ input.showPicker(); return; }catch(e){} }
+    input.focus(); input.click();
+  });
   document.getElementById('calMesAnterior').addEventListener('click', () => {
     const d = new Date(calMesVisualizado.ano, calMesVisualizado.mes-1, 1);
     calMesVisualizado = { ano: d.getFullYear(), mes: d.getMonth() };
