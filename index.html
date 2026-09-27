@@ -48,7 +48,7 @@
   html::-webkit-scrollbar{display:none;}
   body{scrollbar-width:none;}
   body::-webkit-scrollbar{display:none;}
-  html{overflow-x:hidden;background:var(--bg);overscroll-behavior-y:none;}
+  html{overflow-x:hidden;background:var(--bg);}
   body.modal-aberto{position:fixed;left:0;right:0;overflow:hidden;width:100%;}
   /* evita que segurar o dedo em cima de um valor dispare o menu nativo de seleção/copiar do iOS —
      mas libera de novo dentro de campos de verdade, onde selecionar/colar é necessário */
@@ -56,7 +56,6 @@
   input, textarea, select{-webkit-touch-callout:default;-webkit-user-select:text;user-select:text;}
   body{
     overflow-x:hidden;
-    overscroll-behavior-y:none;
     position:relative;
     background:var(--bg);
     color:var(--ink);
@@ -530,28 +529,35 @@
   .wizard-dots span.on{background:var(--primary);}
   .btn-texto{background:none;border:none;color:var(--ink-soft);font-size:13.5px;cursor:pointer;}
   .tela-carregando{
-    position:fixed;inset:0;z-index:500;background:var(--bg);
+    position:fixed;inset:0;z-index:500;
+    background:linear-gradient(160deg, #1B3FE0 0%, #2E5CFF 60%, #4B72FF 100%);
     display:flex;align-items:center;justify-content:center;
     transition:opacity .35s ease;
   }
   .tela-carregando.saindo{opacity:0;pointer-events:none;}
-  .carregando-conteudo{display:flex;flex-direction:column;align-items:center;gap:16px;}
-  .carregando-icone{font-size:40px;}
-  .carregando-spinner{
-    width:28px;height:28px;border-radius:50%;
-    border:3px solid var(--line);border-top-color:var(--primary);
-    animation:girarCarregando .8s linear infinite;
+  .carregando-conteudo{display:flex;flex-direction:column;align-items:center;gap:26px;}
+  .logo-app{filter:drop-shadow(0 10px 28px rgba(0,0,0,.3));}
+  .logo-seta-linha{
+    stroke-dasharray:150;stroke-dashoffset:150;
+    animation:desenharSeta 1.6s ease-in-out infinite;
   }
-  .carregando-texto{font-size:13px;color:var(--ink-soft);}
-  @keyframes girarCarregando{ to{ transform:rotate(360deg); } }
+  @keyframes desenharSeta{
+    0%{ stroke-dashoffset:150; }
+    55%{ stroke-dashoffset:0; }
+    100%{ stroke-dashoffset:-150; }
+  }
 </style>
 </head>
 <body>
 <div class="tela-carregando" id="telaCarregando">
   <div class="carregando-conteudo">
-    <span class="carregando-icone">💰</span>
-    <div class="carregando-spinner"></div>
-    <p class="carregando-texto">Carregando seu painel financeiro…</p>
+    <svg class="logo-app" viewBox="0 0 200 200" width="120" height="120" aria-label="Logo do app">
+      <rect x="30" y="110" width="26" height="60" rx="4" fill="#1DD6A3"/>
+      <rect x="70" y="80" width="26" height="90" rx="4" fill="#1DD6A3"/>
+      <rect x="110" y="50" width="26" height="120" rx="4" fill="#1DD6A3"/>
+      <path class="logo-seta-linha" d="M 25 75 L 65 45 L 105 60 L 145 20" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 145 20 L 145 45 M 145 20 L 120 20" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
   </div>
 </div>
 <div class="app">
@@ -915,7 +921,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.43.0</p>
+      <p class="versao-app">Versão 1.45.0</p>
     </div>
   </section>
 
