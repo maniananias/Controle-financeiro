@@ -90,11 +90,9 @@
 
   /* ---- topo comum ---- */
   .topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px;}
-  .topbar h1{font-size:24px;letter-spacing:-.3px;}
+  .topbar h1{font-size:19px;letter-spacing:-.3px;}
   .periodo{display:flex;gap:4px;flex-wrap:nowrap;align-items:center;position:relative;flex:0 0 auto;}
-  .periodo-data-wrap{position:relative;display:flex;}
-  .campo-data-invisivel{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:auto;color-scheme:dark;cursor:pointer;}
-  .periodo-navegador{display:flex;align-items:center;gap:0;}
+  .periodo-navegador{display:flex;align-items:center;gap:0;min-width:0;flex:1 1 auto;}
   .btn-seta-data{
     width:24px;height:34px;display:flex;align-items:center;justify-content:center;
     background:none;border:none;
@@ -102,10 +100,17 @@
     padding:0;line-height:1;
   }
   .btn-seta-data:active{color:var(--primary);}
+  .periodo-data-wrap{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    min-width:44px;min-height:34px;flex:0 0 auto;
+  }
   .periodo-data-texto{
-    height:34px;display:flex;align-items:center;justify-content:center;
-    font-family:'Inter',sans-serif;font-size:19px;font-weight:700;color:var(--ink);
-    background:none;border:none;padding:0 3px;margin:0;cursor:pointer;white-space:nowrap;line-height:1;
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:var(--ink);
+    white-space:nowrap;padding:0 4px;pointer-events:none;
+  }
+  .campo-data-invisivel{
+    position:absolute;inset:-6px;opacity:0;pointer-events:auto;color-scheme:dark;cursor:pointer;
+    -webkit-appearance:none;appearance:none;border:none;background:none;
   }
   .calendario-cabecalho{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .calendario-mes-ano{font-size:15px;font-weight:700;color:var(--ink);}
@@ -560,8 +565,8 @@
         <div class="periodo-navegador">
           <button id="btnDiaAnterior" class="btn-seta-data" type="button" aria-label="Dia anterior">‹</button>
           <div class="periodo-data-wrap">
-            <span id="btnAbrirDataCompleta" class="periodo-data-texto"></span>
-            <input type="date" id="dashDataUnica" class="campo-data-invisivel">
+            <span id="periodoDataLabel" class="periodo-data-texto"></span>
+            <input type="date" id="dashDataUnica" class="campo-data-invisivel" tabindex="-1">
           </div>
           <button id="btnDiaProximo" class="btn-seta-data" type="button" aria-label="Próximo dia">›</button>
         </div>
@@ -910,7 +915,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.40.1</p>
+      <p class="versao-app">Versão 1.43.0</p>
     </div>
   </section>
 
@@ -2645,12 +2650,13 @@
     dashDia.value = filtro.dia;
     dashMes.value = filtro.mes; dashAno.value = filtro.ano;
     document.getElementById('dashDataUnica').value = isoDate(filtro.ano, filtro.mes, filtro.dia);
-    const anoRealAgora = new Date().getFullYear();
-    document.getElementById('btnAbrirDataCompleta').textContent = String(filtro.dia).padStart(2,'0')+' '+MESES_ABREV[filtro.mes]+(filtro.ano !== anoRealAgora ? ' '+filtro.ano : '');
 
     const hoje = new Date();
     const estaEmHoje = (filtro.ano === hoje.getFullYear() && filtro.mes === hoje.getMonth() && filtro.dia === hoje.getDate());
     document.getElementById('btnHoje').style.visibility = estaEmHoje ? 'hidden' : 'visible';
+    document.getElementById('periodoDataLabel').textContent = estaEmHoje
+      ? 'Hoje'
+      : String(filtro.dia).padStart(2,'0')+' '+MESES_ABREV[filtro.mes]+(filtro.ano !== hoje.getFullYear() ? ' '+filtro.ano : '');
 
     const t = totaisDoMes(filtro.ano, filtro.mes);
     const ehMesAtualDeVerdade = (filtro.ano === hoje.getFullYear() && filtro.mes === hoje.getMonth());
