@@ -105,22 +105,19 @@
     font-family:'Inter',sans-serif;font-size:19px;font-weight:700;color:var(--ink);
     background:none;border:none;padding:0 3px;margin:0;cursor:pointer;white-space:nowrap;line-height:1;
   }
-  .periodo-data-completa{
-    position:absolute;top:calc(100% + 4px);right:0;z-index:20;
-    display:flex;align-items:center;gap:2px;
-    background-color:var(--surface);border:1px solid var(--line);border-radius:12px;
-    padding:2px 4px;box-shadow:var(--shadow);
+  .calendario-cabecalho{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .calendario-mes-ano{font-size:15px;font-weight:700;color:var(--ink);}
+  .calendario-dias-semana{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:6px;}
+  .calendario-dias-semana span{font-size:11px;font-weight:600;color:var(--ink-faint);}
+  .calendario-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .calendario-dia{
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    border-radius:50%;border:none;background:none;color:var(--ink);
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;
   }
-  .periodo-divisor{color:var(--ink-faint);font-size:13px;font-weight:600;}
-  .periodo-data-completa select{
-    font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:var(--ink);
-    background-color:transparent;border:none;
-    -webkit-appearance:none;-moz-appearance:none;appearance:none;
-    min-width:38px;text-align:center;
-    padding:6px 16px 6px 6px;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2393A2B8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 2px center;background-size:9px 6px;
-  }
+  .calendario-dia:disabled{visibility:hidden;cursor:default;}
+  .calendario-dia.hoje{border:1.5px solid var(--gold);color:var(--gold);}
+  .calendario-dia.selecionado{background:var(--gradient-primary);color:#0A0F17;font-weight:700;}
   .btn-hoje{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;color:var(--primary);background:var(--primary-soft);border:1px solid var(--primary);border-radius:9px;padding:3px 6px;cursor:pointer;flex:0 0 auto;}
   .btn-fechar-tela{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink-soft);background:var(--surface-alt);border:1px solid var(--line);border-radius:20px;padding:9px 16px;cursor:pointer;flex:none;transition:background .15s,border-color .15s,color .15s;}
   .btn-fechar-tela:active{background:rgba(255,107,133,.12);border-color:rgba(255,107,133,.4);color:var(--danger);}
@@ -563,11 +560,9 @@
           <button id="btnAbrirDataCompleta" class="periodo-data-texto" type="button"></button>
           <button id="btnDiaProximo" class="btn-seta-data" type="button" aria-label="Próximo dia">›</button>
         </div>
-        <div class="periodo-data-completa" id="periodoDataCompleta" style="display:none;">
+        <div style="display:none;">
           <select id="dashDia"></select>
-          <span class="periodo-divisor">/</span>
           <select id="dashMes"></select>
-          <span class="periodo-divisor">/</span>
           <select id="dashAno"></select>
         </div>
       </div>
@@ -768,10 +763,7 @@
         <span class="ferias-resultado-tag">✅ EXATO · calculado pela lei</span>
         <div id="feriasTotalBrutoLinha"></div>
       </div>
-      <div class="ferias-resultado-linha ferias-resultado-estimativa" id="feriasLinhaLiquido" style="display:none;">
-        <span class="ferias-resultado-tag">🧮 ESTIMATIVA · depende do desconto que você informou</span>
-        <div id="feriasTotalLiquidoLinha"></div>
-      </div>
+      <div class="alerta positivo" id="feriasAlertaRecebimento" style="display:none;margin-top:10px;"></div>
     </div>
 
     <div class="ajuste-box" id="feriasImpactoBox" style="display:none;">
@@ -914,7 +906,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.35.5</p>
+      <p class="versao-app">Versão 1.38.0</p>
     </div>
   </section>
 
@@ -1052,6 +1044,23 @@
   </div>
 
   <!-- ===== MODAL META ===== -->
+  <!-- ===== MODAL CALENDÁRIO (escolher data da Visão geral) ===== -->
+  <div class="modal-overlay" id="modalCalendario">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <button class="modal-close" data-close-modal type="button">✕</button>
+      <h2 class="modal-title">Escolher data</h2>
+      <div class="calendario-cabecalho">
+        <button type="button" id="calMesAnterior" class="btn-seta-data" aria-label="Mês anterior">‹</button>
+        <span id="calMesAnoLabel" class="calendario-mes-ano"></span>
+        <button type="button" id="calMesProximo" class="btn-seta-data" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="calendario-dias-semana"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+      <div class="calendario-grid" id="calendarioGrid"></div>
+      <button type="button" class="btn-secundario" id="calBtnHoje" style="width:100%;margin-top:14px;">Ir para hoje</button>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="modalMeta">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
@@ -2192,21 +2201,27 @@
     }
     document.getElementById('feriasDetalhamento').innerHTML = detalhes;
     document.getElementById('feriasTotalBrutoLinha').innerHTML = 'Valor bruto: <b class="mono">'+fmt(r.total)+'</b>';
-    const linhaLiquido = document.getElementById('feriasLinhaLiquido');
+    const alertaRecebimento = document.getElementById('feriasAlertaRecebimento');
     if(desconto > 0){
-      document.getElementById('feriasTotalLiquidoLinha').innerHTML = 'Valor líquido (bruto − '+fmt(desconto)+' de desconto): <b class="mono">'+fmt(liquido)+'</b>';
-      linhaLiquido.style.display = 'block';
+      alertaRecebimento.className = 'alerta positivo';
+      alertaRecebimento.style.display = 'flex';
+      alertaRecebimento.innerHTML = '<span>💰</span><span>Você deve receber aproximadamente <b>'+fmt(liquido)+'</b> líquido (bruto de '+fmt(r.total)+' menos '+fmt(desconto)+' de desconto informado).</span>';
     }else{
-      linhaLiquido.style.display = 'none';
+      alertaRecebimento.className = 'alerta atencao';
+      alertaRecebimento.style.display = 'flex';
+      alertaRecebimento.innerHTML = '<span>⚠️</span><span>Esse valor é bruto. O que você vai receber de verdade é menor, depois de INSS/IR. Se souber aproximadamente quanto costuma ser esse desconto, preenche o campo abaixo pra ver o líquido estimado.</span>';
     }
     document.getElementById('feriasResultadoBox').style.display = 'block';
 
     const impactoBox = document.getElementById('feriasImpactoBox');
     const temImpacto = impacto.some(x => x.diasTrabalhados > 0);
     if(temImpacto){
-      document.getElementById('feriasImpactoLista').innerHTML = impacto.filter(x => x.diasTrabalhados > 0).map(x =>
-        '<div class="ajuste-linhas"><div><span>'+MESES[x.mes]+'/'+x.ano+' ('+x.diasTrabalhados+' dias trabalhados)</span><b class="mono pos">'+fmt(x.estimativa)+'</b></div></div>'
-      ).join('');
+      document.getElementById('feriasImpactoLista').innerHTML = impacto.filter(x => x.diasTrabalhados > 0).map(x => {
+        const diferenca = salario - x.estimativa;
+        return '<div class="alerta atencao" style="margin-bottom:8px;">'+
+          '<span>📉</span><span>Em <b>'+MESES[x.mes]+'/'+x.ano+'</b>, seu salário deve vir com <b>'+x.diasTrabalhados+' dias trabalhados</b>: aproximadamente <b>'+fmt(x.estimativa)+'</b>, ou seja, '+fmt(diferenca)+' a menos que o normal ('+fmt(salario)+').</span>'+
+        '</div>';
+      }).join('');
       impactoBox.style.display = 'block';
     }else{
       impactoBox.style.display = 'none';
@@ -2640,8 +2655,9 @@
     // no mês em andamento, "t" inclui recorrências futuras que ainda não aconteceram — pra essas duas
     // informações específicas (percentual de economia e o banner), usamos só o que já rolou até hoje
     const tParaBanner = ehMesAtualDeVerdade ? totaisAteODia(filtro.ano, filtro.mes, hoje.getDate()) : t;
-    document.getElementById('cardSaldo').textContent = fmt(saldoAteHoje());
-    document.getElementById('cardSaldoData').textContent = '(hoje, ' + formatBR(todayISO()) + ')';
+    document.getElementById('cardSaldo').textContent = fmt(saldoAteODia(filtro.ano, filtro.mes, filtro.dia));
+    const isoFiltro = isoDate(filtro.ano, filtro.mes, filtro.dia);
+    document.getElementById('cardSaldoData').textContent = isoFiltro === todayISO() ? '(hoje, ' + formatBR(isoFiltro) + ')' : '(' + formatBR(isoFiltro) + ')';
     document.getElementById('cardEntradas').textContent = fmt(t.entradas);
     document.getElementById('cardSaidas').textContent = fmt(t.saidas);
     document.getElementById('cardDiario').textContent = fmt(t.diario);
@@ -2682,10 +2698,59 @@
   document.getElementById('dashDia').addEventListener('change', e => { filtro.dia = Number(e.target.value); renderDashboard(); });
   document.getElementById('dashMes').addEventListener('change', e => { filtro.mes = Number(e.target.value); renderDashboard(); });
   document.getElementById('dashAno').addEventListener('change', e => { filtro.ano = Number(e.target.value); renderDashboard(); });
-  document.getElementById('btnAbrirDataCompleta').addEventListener('click', () => {
-    const el = document.getElementById('periodoDataCompleta');
-    el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+
+  // ---- calendário (modal central pra escolher a data da Visão geral) ----
+  let calMesVisualizado = { ano: filtro.ano, mes: filtro.mes };
+  function renderCalendarioGrid(){
+    const { ano, mes } = calMesVisualizado;
+    document.getElementById('calMesAnoLabel').textContent = MESES[mes]+' de '+ano;
+    const nDias = daysInMonth(ano, mes);
+    const primeiroDiaSemana = new Date(ano, mes, 1).getDay(); // 0=domingo
+    const hojeISO = todayISO();
+    const grid = document.getElementById('calendarioGrid');
+    let html = '';
+    for(let i=0; i<primeiroDiaSemana; i++) html += '<button type="button" class="calendario-dia" disabled></button>';
+    for(let dia=1; dia<=nDias; dia++){
+      const iso = isoDate(ano, mes, dia);
+      const classes = ['calendario-dia'];
+      if(iso === hojeISO) classes.push('hoje');
+      if(ano===filtro.ano && mes===filtro.mes && dia===filtro.dia) classes.push('selecionado');
+      html += '<button type="button" class="'+classes.join(' ')+'" data-dia="'+dia+'">'+dia+'</button>';
+    }
+    grid.innerHTML = html;
+    grid.querySelectorAll('.calendario-dia[data-dia]').forEach(btn => btn.addEventListener('click', () => {
+      filtro.ano = calMesVisualizado.ano; filtro.mes = calMesVisualizado.mes; filtro.dia = Number(btn.dataset.dia);
+      document.getElementById('dashAno').dataset.ready = '';
+      document.getElementById('dashDia').dataset.dias = '';
+      renderDashboard();
+      document.getElementById('modalCalendario').classList.remove('show');
+    }));
+  }
+  function abrirModalCalendario(){
+    calMesVisualizado = { ano: filtro.ano, mes: filtro.mes };
+    renderCalendarioGrid();
+    document.getElementById('modalCalendario').classList.add('show');
+  }
+  document.getElementById('btnAbrirDataCompleta').addEventListener('click', abrirModalCalendario);
+  document.getElementById('calMesAnterior').addEventListener('click', () => {
+    const d = new Date(calMesVisualizado.ano, calMesVisualizado.mes-1, 1);
+    calMesVisualizado = { ano: d.getFullYear(), mes: d.getMonth() };
+    renderCalendarioGrid();
   });
+  document.getElementById('calMesProximo').addEventListener('click', () => {
+    const d = new Date(calMesVisualizado.ano, calMesVisualizado.mes+1, 1);
+    calMesVisualizado = { ano: d.getFullYear(), mes: d.getMonth() };
+    renderCalendarioGrid();
+  });
+  document.getElementById('calBtnHoje').addEventListener('click', () => {
+    const hoje = new Date();
+    filtro.ano = hoje.getFullYear(); filtro.mes = hoje.getMonth(); filtro.dia = hoje.getDate();
+    document.getElementById('dashAno').dataset.ready = '';
+    document.getElementById('dashDia').dataset.dias = '';
+    renderDashboard();
+    document.getElementById('modalCalendario').classList.remove('show');
+  });
+
   function moverDia(delta){
     const d = new Date(filtro.ano, filtro.mes, filtro.dia);
     d.setDate(d.getDate()+delta);
