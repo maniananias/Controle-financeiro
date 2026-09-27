@@ -78,7 +78,8 @@
     background-size:11px 7px;
   }
 
-  .app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;}
+  .app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;opacity:0;transition:opacity .35s ease;}
+  .app.pronto{opacity:1;}
   .screen{display:none;padding:calc(18px + env(safe-area-inset-top)) 16px 24px;}
   @keyframes slideInRight{ from{ transform:translateX(28px); opacity:0; } to{ transform:translateX(0); opacity:1; } }
   @keyframes slideInLeft{ from{ transform:translateX(-28px); opacity:0; } to{ transform:translateX(0); opacity:1; } }
@@ -920,7 +921,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.46.1</p>
+      <p class="versao-app">Versão 1.47.0</p>
     </div>
   </section>
 
@@ -3977,6 +3978,7 @@
     ativarDicasDeData();
     // garante 2 segundos de tela de carregamento visível, não importa quão rápido os dados carregarem
     await esperaMinima;
+    document.querySelector('.app').classList.add('pronto');
     const telaCarregando = document.getElementById('telaCarregando');
     telaCarregando.classList.add('saindo');
     setTimeout(() => telaCarregando.remove(), 400);
