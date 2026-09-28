@@ -138,9 +138,10 @@
   .card-valor.neg{color:var(--danger);}
   .card.destaque{background:var(--gradient-primary);color:#fff;border:none;box-shadow:0 10px 30px rgba(34,227,178,.22), 0 10px 30px rgba(108,124,255,.18);}
   .card.destaque .card-label{color:rgba(255,255,255,.75);}
-  .btn-olho{flex:0 0 auto;width:32px;height:32px;margin:-4px -4px -4px 0;border:none;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
-  .btn-olho:active{background:rgba(255,255,255,.32);}
-  .btn-olho svg{width:18px;height:18px;}
+  .btn-olho{flex:0 0 auto;width:34px;height:34px;margin-left:2px;border:none;background:none;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:color .15s;}
+  .btn-olho:active{color:var(--primary);}
+  .btn-olho svg{width:22px;height:22px;}
+  body.valores-ocultos .btn-olho{color:var(--gold);}
   /* valores ocultos: campos de dinheiro também aparecem em bolinhas (o valor real continua lá, só não é mostrado);
      ao tocar no campo pra editar, ele se revela pra você ver o que digita */
   body.valores-ocultos input[inputmode="numeric"]:not(:focus){-webkit-text-security:disc;}
@@ -582,6 +583,7 @@
           </div>
           <button id="btnDiaProximo" class="btn-seta-data" type="button" aria-label="Próximo dia">›</button>
         </div>
+        <button class="btn-olho" id="btnOlho" type="button" aria-label="Ocultar valores"></button>
         <div style="display:none;">
           <select id="dashDia"></select>
           <select id="dashMes"></select>
@@ -594,7 +596,7 @@
 
     <div class="cards-grid">
       <div class="card destaque full">
-        <p class="card-label"><span>Saldo atual <span id="cardSaldoData" style="font-weight:400;opacity:.75;"></span></span><button class="btn-olho" id="btnOlho" type="button" aria-label="Ocultar valores"></button></p>
+        <p class="card-label">Saldo atual <span id="cardSaldoData" style="font-weight:400;opacity:.75;"></span></p>
         <p class="card-valor" id="cardSaldo">R$ 0,00</p>
       </div>
       <div class="card"><p class="card-label">Entradas</p><p class="card-valor pos" id="cardEntradas">R$ 0,00</p></div>
@@ -927,7 +929,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.48.1</p>
+      <p class="versao-app">Versão 1.48.2</p>
     </div>
   </section>
 
