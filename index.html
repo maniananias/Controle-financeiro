@@ -138,6 +138,12 @@
   .card-valor.neg{color:var(--danger);}
   .card.destaque{background:var(--gradient-primary);color:#fff;border:none;box-shadow:0 10px 30px rgba(34,227,178,.22), 0 10px 30px rgba(108,124,255,.18);}
   .card.destaque .card-label{color:rgba(255,255,255,.75);}
+  .btn-olho{flex:0 0 auto;width:32px;height:32px;margin:-4px -4px -4px 0;border:none;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+  .btn-olho:active{background:rgba(255,255,255,.32);}
+  .btn-olho svg{width:18px;height:18px;}
+  /* valores ocultos: campos de dinheiro também aparecem em bolinhas (o valor real continua lá, só não é mostrado);
+     ao tocar no campo pra editar, ele se revela pra você ver o que digita */
+  body.valores-ocultos input[inputmode="numeric"]:not(:focus){-webkit-text-security:disc;}
   .card.destaque .card-valor{color:#fff;font-size:27px;text-shadow:0 0 24px rgba(255,255,255,.3);}
   .card.tap{cursor:pointer;}
 
@@ -588,7 +594,7 @@
 
     <div class="cards-grid">
       <div class="card destaque full">
-        <p class="card-label">Saldo atual <span id="cardSaldoData" style="font-weight:400;opacity:.75;"></span></p>
+        <p class="card-label"><span>Saldo atual <span id="cardSaldoData" style="font-weight:400;opacity:.75;"></span></span><button class="btn-olho" id="btnOlho" type="button" aria-label="Ocultar valores"></button></p>
         <p class="card-valor" id="cardSaldo">R$ 0,00</p>
       </div>
       <div class="card"><p class="card-label">Entradas</p><p class="card-valor pos" id="cardEntradas">R$ 0,00</p></div>
@@ -921,7 +927,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.47.0</p>
+      <p class="versao-app">Versão 1.48.1</p>
     </div>
   </section>
 
@@ -1248,6 +1254,76 @@
     Chart.defaults.borderColor = 'rgba(255,255,255,.08)';
     Chart.defaults.font.family = "'Inter', sans-serif";
   }
+  // ================= OCULTAR VALORES (olhinho) =================
+  // Quando ligado, todo valor em dinheiro exibido na tela vira asteriscos. Mexe SÓ no que aparece na tela:
+  // os dados, os campos de digitação, o log e as exportações continuam sempre com os valores reais.
+  let valoresOcultos = false;
+  const REGEX_VALOR_RS = /-?R\$\s?-?\d+(?:\.\d{3})*,\d{2}/g;
+  const REGEX_VALOR_NUM = /-?\d+(?:\.\d{3})*,\d{2}/g;
+  const nosMascarados = new Map(); // nó de texto -> texto original, pra restaurar ao mostrar de novo
+  function mascararTexto(t){ return t.replace(REGEX_VALOR_RS, 'R$ ****').replace(REGEX_VALOR_NUM, '****'); }
+  function mascararNo(no){
+    const t = no.nodeValue;
+    if(!t || t.indexOf(',') === -1) return;
+    const novo = mascararTexto(t);
+    if(novo !== t){
+      if(!nosMascarados.has(no)) nosMascarados.set(no, t);
+      no.nodeValue = novo;
+    }
+  }
+  function mascararArvore(raiz){
+    if(raiz.nodeType === 3){ mascararNo(raiz); return; }
+    if(raiz.nodeType !== 1) return;
+    const walker = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, null);
+    const nos = []; let n;
+    while((n = walker.nextNode())){
+      const tag = n.parentNode && n.parentNode.nodeName;
+      if(tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' || tag === 'OPTION') continue;
+      nos.push(n);
+    }
+    nos.forEach(mascararNo);
+  }
+  const opcoesObservadorValores = { childList:true, subtree:true, characterData:true };
+  // toda tela/lista que o app desenhar enquanto estiver oculto já entra mascarada, antes de aparecer
+  const observadorValores = new MutationObserver(muts => {
+    if(!valoresOcultos) return;
+    observadorValores.disconnect();
+    muts.forEach(m => {
+      if(m.type === 'childList') m.addedNodes.forEach(n => mascararArvore(n));
+      else if(m.type === 'characterData') mascararNo(m.target);
+    });
+    observadorValores.observe(document.body, opcoesObservadorValores);
+  });
+  const SVG_OLHO_ABERTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const SVG_OLHO_FECHADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  function atualizarIconesOlho(){
+    document.querySelectorAll('.btn-olho').forEach(b => {
+      b.innerHTML = valoresOcultos ? SVG_OLHO_FECHADO : SVG_OLHO_ABERTO;
+      b.setAttribute('aria-label', valoresOcultos ? 'Mostrar valores' : 'Ocultar valores');
+    });
+  }
+  function ativarMascaraValores(){
+    valoresOcultos = true;
+    document.body.classList.add('valores-ocultos');
+    mascararArvore(document.body);
+    observadorValores.observe(document.body, opcoesObservadorValores);
+    atualizarIconesOlho();
+  }
+  function desativarMascaraValores(){
+    valoresOcultos = false;
+    document.body.classList.remove('valores-ocultos');
+    observadorValores.disconnect();
+    nosMascarados.forEach((original, no) => { if(no.isConnected && no.nodeValue === mascararTexto(original)) no.nodeValue = original; });
+    nosMascarados.clear();
+    atualizarIconesOlho();
+  }
+  async function alternarValoresOcultos(){
+    if(valoresOcultos) desativarMascaraValores(); else ativarMascaraValores();
+    renderTelaAtual(); // redesenha a tela atual (os gráficos escondem/mostram os números no eixo e na dica)
+    try{ await storage.set('fin-ocultar', JSON.stringify(valoresOcultos), false); }catch(e){}
+    mostrarToast(valoresOcultos ? 'Valores ocultos' : 'Valores visíveis', 1400, 'neutro');
+  }
+
   function criarGrafico(ctx, config){
     if(typeof Chart === 'undefined'){
       const box = ctx.canvas && ctx.canvas.closest('.chart-box');
@@ -1262,6 +1338,13 @@
     }
     config.options = config.options || {};
     if(config.options.maintainAspectRatio === undefined) config.options.maintainAspectRatio = false;
+    if(valoresOcultos){
+      // gráfico desenhado em canvas não dá pra mascarar por texto: esconde os números do eixo e a dica ao tocar
+      const o = config.options;
+      o.plugins = o.plugins || {};
+      o.plugins.tooltip = Object.assign({}, o.plugins.tooltip, { enabled:false });
+      if(o.scales) Object.keys(o.scales).forEach(k => { if(k !== 'x') o.scales[k].ticks = Object.assign({}, o.scales[k].ticks, { display:false }); });
+    }
     try{ return new Chart(ctx, config); }
     catch(e){ console.error('Erro ao criar gráfico:', e); return null; }
   }
@@ -1303,6 +1386,7 @@
     try{ const r = await storage.get('fin-diario-overrides', false); if(r) state.diarioOverrides = JSON.parse(r.value); }catch(e){}
     try{ const r = await storage.get('fin-metas', false); if(r) state.metas = JSON.parse(r.value); }catch(e){}
     try{ const r = await storage.get('fin-log', false); if(r) state.logAlteracoes = JSON.parse(r.value); }catch(e){}
+    try{ const r = await storage.get('fin-ocultar', false); if(r) valoresOcultos = JSON.parse(r.value) === true; }catch(e){}
     migrarDiarioParaMovimentacoes();
     migrarDiaRecebimento();
     repararSeriesCorrompidas();
@@ -1842,11 +1926,11 @@
   document.getElementById('btnFecharDecimo').addEventListener('click', () => irPara('dashboard'));
   function abrirMenuPrincipal(){
     const atual = document.querySelector('.screen.active').id.replace('screen-','');
-    document.querySelectorAll('.mais-item').forEach(b => b.classList.toggle('mais-item-atual', b.dataset.screen === atual));
+    document.querySelectorAll('.mais-item[data-screen]').forEach(b => b.classList.toggle('mais-item-atual', b.dataset.screen === atual));
     document.getElementById('modalMais').classList.add('show');
   }
   document.querySelectorAll('.btn-menu-topo').forEach(b => b.addEventListener('click', abrirMenuPrincipal));
-  document.querySelectorAll('.mais-item').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.mais-item[data-screen]').forEach(b => b.addEventListener('click', () => {
     document.getElementById('modalMais').classList.remove('show');
     irPara(b.dataset.screen);
   }));
@@ -3976,6 +4060,9 @@
       irPara('dashboard');
     }
     ativarDicasDeData();
+    // olhinho (só existe na Visão geral, mas vale pro app todo): se o app foi fechado com os valores ocultos, continua oculto ao abrir
+    document.getElementById('btnOlho').addEventListener('click', alternarValoresOcultos);
+    if(valoresOcultos) ativarMascaraValores(); else atualizarIconesOlho();
     // garante 2 segundos de tela de carregamento visível, não importa quão rápido os dados carregarem
     await esperaMinima;
     document.querySelector('.app').classList.add('pronto');
