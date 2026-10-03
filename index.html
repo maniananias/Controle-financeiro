@@ -929,7 +929,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.48.2</p>
+      <p class="versao-app">Versão 1.48.3</p>
     </div>
   </section>
 
@@ -3400,12 +3400,9 @@
     state.movimentacoes.push(novoItem);
     registrarLog('Diário', 'criado', descricao+' de '+formatBR(iso), null, fmt(valor), { tipo:'mov-criado', id: novoItem.id });
     limparCache(); await salvarMovimentacoes();
-    document.getElementById('diaDiarioValor').value = '';
-    document.getElementById('diaDiarioDescricao').value = '';
-    renderDiaDiarioLista(iso);
     mostrarToast('Adicionado');
     renderTelaAtual();
-    document.getElementById('diaDiarioValor').focus();
+    document.getElementById('modalDiarioDia').classList.remove('show');
   });
   document.getElementById('btnDiaDiarioRemover').addEventListener('click', async () => {
     const iso = document.getElementById('diaDiarioIso').value;
