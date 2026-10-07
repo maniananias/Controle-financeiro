@@ -798,6 +798,7 @@
     <div class="ajuste-box" id="feriasOrcamentoBox" style="display:none;">
       <p class="ajuste-titulo">💰 Quanto você pode gastar nessas férias sem apertar depois</p>
       <p class="ferias-dica" style="margin:0 0 10px;">Nesses dias você não vai ter o gasto diário normal. Esse valor liberado soma com o seu Fôlego do mês em que você volta, dando uma folga extra pra passeio, restaurante etc.</p>
+      <div id="feriasOrcamentoDetalhe"></div>
       <div class="ferias-resultado-linha ferias-resultado-exato">
         <span class="ferias-resultado-tag">Sem considerar reserva mínima</span>
         <div id="feriasOrcamentoBrutoLinha"></div>
@@ -929,7 +930,7 @@
       <h3>ℹ️ Sobre</h3>
       <button class="btn-secundario" id="btnAtualizarApp" style="width:100%;">🔄 Buscar atualizações</button>
       <button class="btn-secundario" id="btnLogAlteracoes" style="width:100%;margin-top:8px;">📋 Log de alterações</button>
-      <p class="versao-app">Versão 1.48.3</p>
+      <p class="versao-app">Versão 1.53.0</p>
     </div>
   </section>
 
@@ -1765,22 +1766,9 @@
         alerts.push({tipo:'atencao', texto:'Você lançou férias este mês. Se o salário normal vier diferente por causa disso, lembre de ajustar o lançamento dele também.'});
       }
     }
-    // se o mês filtrado toca o período de férias em si (não só o pagamento), avisa quanto dá pra gastar
-    state.movimentacoes.forEach(m => {
-      if(m.tipo!=='entrada' || m.categoria!=='Férias' || !m.feriasInicio || !m.feriasDias) return;
-      const fimFerias = addDiasISO(m.feriasInicio, m.feriasDias-1);
-      const ini = parseISO(m.feriasInicio), fim = parseISO(fimFerias);
-      const tocaMes = (ano>ini.ano || (ano===ini.ano && mes>=ini.mes)) && (ano<fim.ano || (ano===fim.ano && mes<=fim.mes));
-      if(!tocaMes) return;
-      const orc = calcularOrcamentoFerias(m.feriasInicio, m.feriasDias, m.valor, m.data, m.feriasImpacto);
-      if(orc){
-        let texto = 'Você tem férias nesse período. Dá pra gastar até '+fmt(orc.bruto)+' sem apertar quando voltar.';
-        if(orc.saldoMinimo > 0 && orc.seguro !== orc.bruto){
-          texto += ' Respeitando sua reserva mínima configurada, o valor seguro é '+fmt(orc.seguro)+'.';
-        }
-        alerts.push({tipo:'positivo', texto});
-      }
-    });
+    // o "quanto dá pra gastar nas férias" fica só dentro da própria tela de Férias (onde já aparece,
+    // calculado com os dados que você preencheu ali) — não repete como alerta na Visão geral, porque esse
+    // valor muda com os seus gastos do dia a dia e virava uma informação confusa de ver toda hora aqui
     return alerts;
   }
 
@@ -2193,8 +2181,19 @@
         impactoSalarios.forEach(imp => {
           const prefixo = imp.ano+'-'+pad(imp.mes+1)+'-';
           const salarioGravado = state.movimentacoes.find(m => m.tipo==='entrada' && m.categoria==='Salário' && m.data.startsWith(prefixo));
-          if(salarioGravado && salarioGravado.data <= dataLimite && salarioGravado.valor > imp.estimativa){
-            ajuste -= (salarioGravado.valor - imp.estimativa);
+          if(salarioGravado){
+            // já existe um lançamento (ou a recorrência já projetou um) pra esse mês: corrige pra baixo
+            // se ele ainda estiver com o valor cheio, diferente da estimativa reduzida
+            if(salarioGravado.data <= dataLimite && salarioGravado.valor > imp.estimativa){
+              ajuste -= (salarioGravado.valor - imp.estimativa);
+            }
+          }else{
+            // não existe NADA projetado pra esse mês (sem recorrência configurada) — a projeção crua
+            // está assumindo R$0 de salário, o que é otimista demais pra baixo. Soma a estimativa a
+            // partir do dia em que o salário normalmente cairia (ou o 1º dia do mês, se não souber o dia)
+            const diaRecebimento = diaSalarioConfigurado ? diaSalarioConfigurado(imp.ano, imp.mes) : null;
+            const dataEstimada = diaRecebimento ? isoDate(imp.ano, imp.mes, diaRecebimento) : (prefixo+'01');
+            if(dataEstimada <= dataLimite) ajuste += imp.estimativa;
           }
         });
       }
@@ -2329,6 +2328,22 @@
     const orcamento = calcularOrcamentoFerias(dataInicio, diasTirados, liquido, data, impacto);
     if(orcamento){
       const diaMaisApertadoTexto = orcamento.piorDia ? ' (ponto mais apertado: '+formatBR(orcamento.piorDia)+')' : '';
+      // detalhamento: mostra o que foi CONSIDERADO na conta (não é uma soma simples desses itens —
+      // o valor final vem de uma simulação dia a dia, então deixa isso claro pra não confundir)
+      let detalheHtml = '<p style="font-size:12px;color:var(--ink-soft);margin:0 0 8px;">O que essa conta já leva em consideração:</p><div class="ajuste-linhas" style="margin-bottom:10px;">';
+      detalheHtml += '<div><span>💰 Pagamento das férias, caindo em '+formatBR(data)+'</span><b class="mono pos">'+fmt(liquido)+'</b></div>';
+      if(Array.isArray(impacto)){
+        impacto.forEach(x => {
+          if(x.diasTrabalhados > 0){
+            detalheHtml += '<div><span>📉 Salário de '+MESES[x.mes]+' vindo reduzido ('+x.diasTrabalhados+' dias trabalhados)</span><b class="mono">'+fmt(x.estimativa)+'</b></div>';
+          }
+        });
+      }
+      if(orcamento.diarioLiberado > 0){
+        detalheHtml += '<div><span>✎ Gasto diário que você não vai ter nesses dias</span><b class="mono pos">'+fmt(orcamento.diarioLiberado)+'</b></div>';
+      }
+      detalheHtml += '</div>';
+      document.getElementById('feriasOrcamentoDetalhe').innerHTML = detalheHtml;
       document.getElementById('feriasOrcamentoBrutoLinha').innerHTML = 'Dá pra gastar até <b class="mono pos">'+fmt(orcamento.bruto)+'</b>'+diaMaisApertadoTexto;
       const seguroBox = document.getElementById('feriasOrcamentoSeguroBox');
       if(orcamento.saldoMinimo > 0){
